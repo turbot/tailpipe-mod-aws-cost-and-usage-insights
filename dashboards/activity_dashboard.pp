@@ -198,7 +198,7 @@ query "cost_by_service" {
   sql         = <<-EOQ
     select 
       line_item_product_code as "service",
-      sum(line_item_unblended_cost) as "total cost ($)"
+      sum(line_item_unblended_cost) as "total cost"
     from 
       aws_cost_and_usage_report
     where
@@ -222,7 +222,7 @@ query "cost_by_region" {
   sql         = <<-EOQ
     select 
       (product ->> 'region') as "aws region",
-      sum(line_item_unblended_cost) as "total cost ($)"
+      sum(line_item_unblended_cost) as "total cost"
     from 
       aws_cost_and_usage_report
     where
@@ -246,9 +246,9 @@ query "cost_anomaly_detection" {
   sql         = <<-EOQ
     select 
       strftime(date_trunc('day', line_item_usage_start_date), '%d %b %Y') as "date",
-      sum(line_item_unblended_cost) as "daily cost ($)", 
-      avg(sum(line_item_unblended_cost)) over (order by date_trunc('day', line_item_usage_start_date) rows between 6 preceding and current row) as "7-day avg cost ($)",
-      sum(line_item_unblended_cost) - avg(sum(line_item_unblended_cost)) over (order by date_trunc('day', line_item_usage_start_date) rows between 6 preceding and current row) as "cost anomaly ($)"
+      sum(line_item_unblended_cost) as "daily cost", 
+      avg(sum(line_item_unblended_cost)) over (order by date_trunc('day', line_item_usage_start_date) rows between 6 preceding and current row) as "7-day avg cost",
+      sum(line_item_unblended_cost) - avg(sum(line_item_unblended_cost)) over (order by date_trunc('day', line_item_usage_start_date) rows between 6 preceding and current row) as "cost anomaly"
     from 
       aws_cost_and_usage_report
     where 
@@ -273,7 +273,7 @@ query "cost_by_usage_type" {
   sql         = <<-EOQ
     select 
       line_item_usage_type as "usage type",
-      sum(line_item_unblended_cost) as "Total Cost ($)"
+      sum(line_item_unblended_cost) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
@@ -297,15 +297,19 @@ query "top_services" {
   sql         = <<-EOQ
     select 
       product_service_code as "service",
-      sum(line_item_unblended_cost) as "total cost ($)"
+      sum(line_item_unblended_cost) as "total cost"
     from 
       aws_cost_and_usage_report
+    where
+      line_item_usage_account_id = $1
     group by 
       product_service_code
     order by 
       sum(line_item_unblended_cost) desc
     limit 10;
   EOQ
+
+  param "line_item_usage_account_id" {}
 
   tags = {
     folder = "Account"
@@ -343,7 +347,7 @@ query "cost_over_time" {
   sql         = <<-EOQ
     select 
       strftime(date_trunc('day', line_item_usage_start_date), '%d %b %Y') as "date",
-      sum(line_item_unblended_cost) as "total cost ($)"
+      sum(line_item_unblended_cost) as "total cost"
     from 
       aws_cost_and_usage_report
     where 
