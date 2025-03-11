@@ -9,7 +9,7 @@ dashboard "cost_usage_dashboard" {
 
   input "account" {
     title       = "AWS Account"
-    description = "Select an AWS account to filter the dashboard"
+    description = "Select an AWS account to filter the dashboard."
     type        = "select"
     query       = query.aws_account_input
   }
@@ -123,8 +123,9 @@ dashboard "cost_usage_dashboard" {
 
 query "currency" {
   title       = "Currency"
-  description = "Shows the currency used for cost calculations"
-  sql         = <<-EOQ
+  description = "Shows the currency used for cost calculations."
+
+  sql = <<-EOQ
     select distinct line_item_currency_code as "Currency"
     from 
       aws_cost_and_usage_report
@@ -141,8 +142,9 @@ query "currency" {
 
 query "total_cost" {
   title       = "Total Cost"
-  description = "Total unblended cost for the selected AWS account"
-  sql         = <<-EOQ
+  description = "Total unblended cost for the selected AWS account."
+  
+  sql = <<-EOQ
     select 
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
@@ -160,8 +162,9 @@ query "total_cost" {
 
 query "total_accounts" {
   title       = "Total AWS Accounts"
-  description = "Total number of unique AWS accounts in the cost and usage report"
-  sql         = <<-EOQ
+  description = "Total number of unique AWS accounts in the cost and usage report."
+  
+  sql = <<-EOQ
     select 
       count(distinct line_item_usage_account_id) as "Total Accounts"
     from 
@@ -175,8 +178,9 @@ query "total_accounts" {
 
 query "total_services" {
   title       = "Total AWS Services"
-  description = "Total number of unique AWS services used across accounts"
-  sql         = <<-EOQ
+  description = "Total number of unique AWS services used across accounts."
+  
+  sql = <<-EOQ
     select 
       count(distinct line_item_product_code) as "Total Services"
     from 
@@ -194,8 +198,9 @@ query "total_services" {
 
 query "cost_by_service" {
   title       = "Cost by Service"
-  description = "Distribution of costs across different AWS services for the selected account"
-  sql         = <<-EOQ
+  description = "Distribution of costs across different AWS services for the selected account."
+  
+  sql = <<-EOQ
     select 
       line_item_product_code as "service",
       sum(line_item_unblended_cost) as "total cost"
@@ -218,8 +223,9 @@ query "cost_by_service" {
 
 query "cost_by_region" {
   title       = "Cost by Region"
-  description = "Distribution of costs across different AWS regions for the selected account"
-  sql         = <<-EOQ
+  description = "Distribution of costs across different AWS regions for the selected account."
+  
+  sql = <<-EOQ
     select 
       coalesce(product_region_code, 'global') as "aws region",
       sum(line_item_unblended_cost) as "total cost"
@@ -242,8 +248,9 @@ query "cost_by_region" {
 
 query "cost_anomaly_detection" {
   title       = "Cost Anomaly Detection"
-  description = "Detects cost anomalies by comparing daily costs against 7-day moving average"
-  sql         = <<-EOQ
+  description = "Detects cost anomalies by comparing daily costs against 7-day moving average."
+  
+  sql = <<-EOQ
     select 
       strftime(date_trunc('day', line_item_usage_start_date), '%d %b %Y') as "date",
       sum(line_item_unblended_cost) as "daily cost", 
@@ -269,8 +276,9 @@ query "cost_anomaly_detection" {
 
 query "cost_by_usage_type" {
   title       = "Cost by Usage Type"
-  description = "Distribution of costs across different AWS usage types for the selected account"
-  sql         = <<-EOQ
+  description = "Distribution of costs across different AWS usage types for the selected account."
+  
+  sql = <<-EOQ
     select 
       line_item_usage_type as "usage type",
       sum(line_item_unblended_cost) as "Total Cost"
@@ -293,8 +301,9 @@ query "cost_by_usage_type" {
 
 query "top_services" {
   title       = "Top 10 High-Cost Services"
-  description = "List of top 10 AWS services with highest costs across all accounts"
-  sql         = <<-EOQ
+  description = "List of top 10 AWS services with highest costs across all accounts."
+  
+  sql = <<-EOQ
     select 
       product_service_code as "service",
       sum(line_item_unblended_cost) as "total cost"
@@ -318,8 +327,9 @@ query "top_services" {
 
 query "cost_by_resources" {
   title       = "Cost by Resources"
-  description = "Distribution of costs across different AWS resources for the selected account"
-  sql         = <<-EOQ
+  description = "Distribution of costs across different AWS resources for the selected account."
+  
+  sql = <<-EOQ
     select 
       line_item_resource_id as "resource",
       sum(line_item_unblended_cost) as "Total Cost"
@@ -343,8 +353,9 @@ query "cost_by_resources" {
 
 query "cost_over_time" {
   title       = "Cost Over Time"
-  description = "Daily cost trend over the last 30 days"
-  sql         = <<-EOQ
+  description = "Daily cost trend over the last 30 days."
+  
+  sql = <<-EOQ
     select 
       strftime(date_trunc('day', line_item_usage_start_date), '%d %b %Y') as "date",
       sum(line_item_unblended_cost) as "total cost"
@@ -369,8 +380,9 @@ query "cost_over_time" {
 # Query Input
 query "aws_account_input" {
   title       = "AWS Account Selection"
-  description = "Input control to select an AWS account for filtering dashboard data"
-  sql         = <<-EOQ
+  description = "Input control to select an AWS account for filtering dashboard data."
+  
+  sql = <<-EOQ
     select 
       distinct line_item_usage_account_id as label,
       line_item_usage_account_id as value
