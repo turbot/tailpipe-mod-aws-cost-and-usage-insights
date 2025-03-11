@@ -1,9 +1,9 @@
 dashboard "cost_usage_dashboard" {
-  title         = "AWS Cost and Usage Dashboard"
+  title         = "Cost and Usage Dashboard"
   documentation = file("./dashboards/docs/cost_usage_dashboard.md")
 
   tags = {
-    type    = "dashboard"
+    type    = "Dashboard"
     service = "AWS/CostExport"
   }
 
