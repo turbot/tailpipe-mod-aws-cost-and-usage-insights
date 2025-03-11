@@ -46,17 +46,9 @@ dashboard "cost_usage_dashboard" {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
-
   }
 
   container {
-
-    # chart {
-    #   title = "Cost by Account"
-    #   query = query.cost_by_account
-    #   type  = "column"
-    #   width = 6
-    # }
 
     chart {
       title = "Cost by Service"
@@ -104,35 +96,21 @@ dashboard "cost_usage_dashboard" {
       type  = "table"
       width = 6
 
-       args  = {
+      args  = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
 
-    # chart {
-    #   title = "Top 10 High-Usage Resources"
-    #   query = query.top_resources
-    #   type  = "table"
-    #   width = 6
-    # }
     card {
     title = "AWS Cost Anomaly Detection"
     type  = "table"
     query = query.cost_anomaly_detection
     width = 6
 
-     args  = {
+    args  = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
-
-    # card {
-    #   title = "Month-over-Month Cost Trends"
-    #   type  = "table"
-    #   query = query.mom_trends
-    #   width = 6
-    # }
-
 
     chart {
       title = "Cost Over Time (Last 30 Days)"
@@ -140,13 +118,11 @@ dashboard "cost_usage_dashboard" {
       type  = "line"
       width = 12
 
-       args  = {
+      args  = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
-
   }
-
 }
 
 # Query Definitions
@@ -275,8 +251,8 @@ query "cost_anomaly_detection" {
   description = "Detects cost anomalies by comparing daily costs against 7-day moving average"
   sql = <<-EOQ
     select 
-      date_trunc('day', line_item_usage_start_date) as "date",
-      sum(line_item_unblended_cost) as "daily cost ($)",
+      strftime(date_trunc('day', line_item_usage_start_date), '%d %b %Y') as "date",
+      sum(line_item_unblended_cost) as "daily cost ($)", 
       avg(sum(line_item_unblended_cost)) over (order by date_trunc('day', line_item_usage_start_date) rows between 6 preceding and current row) as "7-day avg cost ($)",
       sum(line_item_unblended_cost) - avg(sum(line_item_unblended_cost)) over (order by date_trunc('day', line_item_usage_start_date) rows between 6 preceding and current row) as "cost anomaly ($)"
     from 
@@ -287,7 +263,7 @@ query "cost_anomaly_detection" {
     group by 
       date_trunc('day', line_item_usage_start_date)
     order by 
-      "date" asc;
+      date_trunc('day', line_item_usage_start_date) asc;
   EOQ
 
   param "line_item_usage_account_id" {}
@@ -398,7 +374,7 @@ query "cost_over_time" {
   description = "Daily cost trend over the last 30 days"
   sql = <<-EOQ
     select 
-      date_trunc('day', line_item_usage_start_date) as "date",
+      strftime(date_trunc('day', line_item_usage_start_date), '%d %b %Y') as "date",
       sum(line_item_unblended_cost) as "total cost ($)"
     from 
       aws_cost_and_usage_report
