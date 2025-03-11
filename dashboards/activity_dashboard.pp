@@ -165,7 +165,7 @@ query "currency" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -184,7 +184,7 @@ query "total_cost" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -199,7 +199,7 @@ query "total_accounts" {
   EOQ
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -218,7 +218,7 @@ query "total_services" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -242,7 +242,7 @@ query "cost_by_service" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -266,7 +266,7 @@ query "cost_by_region" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -318,7 +318,7 @@ query "cost_anomaly_detection" {
 #   EOQ
 
 #   tags = {
-#     folder = "billing"
+#     folder = "Account"
 #   }
 # }
 
@@ -343,7 +343,7 @@ query "cost_by_usage_type" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -364,7 +364,7 @@ query "top_services" {
   EOQ
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -389,7 +389,7 @@ query "cost_by_resources" {
 
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
@@ -414,7 +414,7 @@ query "cost_over_time" {
   param "line_item_usage_account_id" {}
 
   tags = {
-    folder = "billing"
+    folder = "Account"
   }
 }
 
