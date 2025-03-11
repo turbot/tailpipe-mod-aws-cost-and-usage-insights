@@ -221,14 +221,14 @@ query "cost_by_region" {
   description = "Distribution of costs across different AWS regions for the selected account"
   sql         = <<-EOQ
     select 
-      (product ->> 'region') as "aws region",
+      coalesce(product_region_code, 'global') as "aws region",
       sum(line_item_unblended_cost) as "total cost"
     from 
       aws_cost_and_usage_report
     where
       line_item_usage_account_id = $1
     group by 
-      (product ->> 'region')
+      coalesce(product_region_code, 'global')
     order by 
       sum(line_item_unblended_cost) desc;
   EOQ
