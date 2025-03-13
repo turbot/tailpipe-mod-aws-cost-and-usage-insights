@@ -288,18 +288,93 @@ query "untagged_resource_cost_breakdown" {
   title       = "Untagged Resources Cost Breakdown"
   description = "Detailed cost breakdown of resources without any tags."
   sql = <<-EOQ
-    SELECT 
+    with resource_tags_exploded as (
+      -- Explode all tags for each resource
+      select 
+        line_item_resource_id,
+        line_item_product_code,
+        product_region_code,
+        line_item_usage_account_id,
+        line_item_unblended_cost,
+        unnest(json_keys(resource_tags)) as tag_key,
+        json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value
+      from 
+        aws_cost_and_usage_report
+      where 
+        resource_tags is not null
+        and line_item_resource_id is not null
+    ), 
+    tag_status_by_resource as (
+      -- Check if all tags for each resource have empty values
+      select 
+        line_item_resource_id,
+        line_item_product_code,
+        product_region_code,
+        line_item_usage_account_id,
+        line_item_unblended_cost,
+        case when bool_and(tag_value = '""' or tag_value is null) then true else false end as all_tags_empty
+      from 
+        resource_tags_exploded
+      group by
+        line_item_resource_id,
+        line_item_product_code,
+        product_region_code,
+        line_item_usage_account_id,
+        line_item_unblended_cost
+    ), 
+    combined_resources as (
+      -- Resources with all empty tags
+      select 
+        line_item_resource_id,
+        line_item_product_code,
+        product_region_code,
+        line_item_usage_account_id,
+        line_item_unblended_cost
+      from 
+        tag_status_by_resource
+      where 
+        all_tags_empty = true
+      
+      union all
+      
+      -- Resources with no tags at all
+      select 
+        line_item_resource_id,
+        line_item_product_code,
+        product_region_code,
+        line_item_usage_account_id,
+        line_item_unblended_cost
+      from 
+        aws_cost_and_usage_report
+      where 
+        (resource_tags is null or resource_tags = '{}')
+        and line_item_resource_id is not null
+    )
+    select 
       line_item_resource_id as "Resource ID",
       line_item_product_code as "Service",
-      coalesce(product_region_code, 'global') as "Region",
+      case
+        when line_item_resource_id like 'arn:aws%' then
+          case
+            when split_part(line_item_resource_id, ':', 4) = '' or split_part(line_item_resource_id, ':', 4) is null then 'global'
+            else split_part(line_item_resource_id, ':', 4)
+          end
+        else
+          coalesce(product_region_code, 'global')
+      end as "Region",
       line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    FROM aws_cost_and_usage_report
-    WHERE 
-      ('all' in ($1) or line_item_usage_account_id in $1)
-      AND (resource_tags is null OR resource_tags = '{}')
-    GROUP BY line_item_resource_id, line_item_product_code, product_region_code, line_item_usage_account_id
-    ORDER BY sum(line_item_unblended_cost) DESC;
+    from 
+      combined_resources
+    where 
+      ('all' in ($1) or line_item_usage_account_id in $1)  -- Account filter parameter
+    group by 
+      line_item_resource_id,
+      line_item_product_code,
+      product_region_code,
+      line_item_usage_account_id
+    order by 
+      sum(line_item_unblended_cost) desc;
   EOQ
 
   param "line_item_usage_account_id" {}
