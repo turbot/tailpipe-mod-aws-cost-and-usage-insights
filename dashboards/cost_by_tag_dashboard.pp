@@ -156,10 +156,12 @@ query "monthly_cost_by_tag" {
     tag_costs as (
       select 
         date_trunc('month', line_item_usage_start_date) as month,
-        concat('{ ', tag_key, ': ', tag_value, ' }') as tag,
+        concat(tag_key, ': ', tag_value) as tag,
         sum(line_item_unblended_cost) as cost
       from 
         formatted_entries
+      where
+        tag_value <> '""'
       group by 
         date_trunc('month', line_item_usage_start_date),
         tag_key,
@@ -210,13 +212,15 @@ query "top_10_tags_by_cost" {
         sum(line_item_unblended_cost) as cost
       from 
         formatted_entries
+      where
+        tag_value <> '""'
       group by 
         tag_key,
         tag_value,
         original_value
     )
     select 
-      concat('{ ', tag_key, ': ', tag_value, ' }') as "Tag",
+      concat(tag_key, ': ', tag_value) as "Tag",
       round(cost, 2) as "Total Cost"
     from 
       tag_costs
@@ -260,15 +264,17 @@ query "tagged_resource_cost_breakdown" {
         ('all' in ($1) or line_item_usage_account_id in $1)
     )
     select 
-      concat('{ ', tag_key, ': ', tag_value, ' }') as "Tag",
+      concat(tag_key, ': ', tag_value) as "Tag",
       line_item_resource_id as "Resource ID",
       line_item_product_code as "Service",
       coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       formatted_entries
+    where
+      tag_value <> '""'
     group by 
-      concat('{ ', tag_key, ': ', tag_value, ' }'),
+      concat(tag_key, ': ', tag_value),
       line_item_resource_id,
       line_item_product_code,
       product_region_code
