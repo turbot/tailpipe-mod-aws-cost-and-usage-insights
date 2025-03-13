@@ -125,7 +125,7 @@ query "total_cost" {
     select round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from aws_cost_and_usage_report
     where 
-      ('all' in ($1) or line_item_usage_account_id IN $1);
+      ('all' in ($1) or line_item_usage_account_id in $1);
   EOQ
   param "line_item_usage_account_ids" {}
 }
@@ -142,7 +142,7 @@ query "monthly_cost" {
       aws_cost_and_usage_report
     where 
       line_item_usage_start_date >= current_date - interval '6' month
-      and ('all' in ($1) or line_item_usage_account_id IN $1)
+      and ('all' in ($1) or line_item_usage_account_id in $1)
     group by
       date_trunc('month', line_item_usage_start_date),
       line_item_usage_account_id
@@ -220,7 +220,7 @@ query "top_services" {
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from aws_cost_and_usage_report
     where 
-      ('all' in ($1) or line_item_usage_account_id IN $1)
+      ('all' in ($1) or line_item_usage_account_id in $1)
     group by 1
     order by 2 desc
     limit 10;
