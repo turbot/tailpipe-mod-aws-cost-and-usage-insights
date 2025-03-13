@@ -53,7 +53,7 @@ dashboard "cost_by_account_dashboard" {
     }
 
     chart {
-      title = "Top 10 Accounts by Cost"
+      title = "Top 10 Accounts"
       type  = "table"
       width = 6
       query = query.account_top_10
@@ -67,7 +67,7 @@ dashboard "cost_by_account_dashboard" {
   container {
     # Detailed Table
     table {
-      title = "Account Cost Details"
+      title = "Account Costs"
       width = 12
       query = query.account_cost_details
       args  = {
@@ -116,7 +116,7 @@ query "monthly_cost_trend" {
   sql = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
-      line_item_usage_account_id as "AWS Account",
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -135,11 +135,11 @@ query "monthly_cost_trend" {
 }
 
 query "account_top_10" {
-  title       = "Top 10 Accounts by Cost"
+  title       = "Top 10 Accounts"
   description = "List of top 10 AWS accounts with the highest costs."
   sql = <<-EOQ
     select 
-      line_item_usage_account_id as "AWS Account",
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -160,7 +160,7 @@ query "account_cost_details" {
   description = "Detailed cost breakdown per AWS account, including number of services and regions used."
   sql = <<-EOQ
     select 
-      line_item_usage_account_id as "AWS Account",
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost",
     from 
       aws_cost_and_usage_report

@@ -36,7 +36,7 @@ dashboard "tag_cost_detail_dashboard" {
   container {
     # Cost Trend and Key/Value Breakdown
     chart {
-      title = "Monthly Cost by Tag"
+      title  = "Monthly Cost Trend"
       #type  = "bar"
       width = 6
       query = query.monthly_cost_by_tag
@@ -55,7 +55,7 @@ dashboard "tag_cost_detail_dashboard" {
     }
 
     chart {
-      title = "Top 10 Tags by Cost"
+      title = "Top 10 Tags"
       type  = "table"
       width = 6
       query = query.top_10_tags_by_cost
@@ -63,14 +63,14 @@ dashboard "tag_cost_detail_dashboard" {
         "line_item_usage_account_id" = self.input.account.value
       }
 
-     
+
     }
   }
 
   container {
     # Detailed Table
     table {
-      title = "Tagged Resource Cost Breakdown"
+      title = "Tag Costs by Account and Region"
       width = 12
       query = query.tagged_resource_cost_breakdown
       args  = {
@@ -82,7 +82,7 @@ dashboard "tag_cost_detail_dashboard" {
   container {
     # Untagged Resources Table
     table {
-      title = "Untagged Resources Cost Breakdown"
+      title = "Untagged Resource Costs"
       width = 12
       query = query.untagged_resource_cost_breakdown
       args  = {
@@ -126,7 +126,7 @@ query "tag_currency" {
 }
 
 query "monthly_cost_by_tag" {
-  title       = "Monthly Cost per Tag"
+  title       = "Monthly Cost Trend"
   description = "Aggregated cost per month for each tag in the selected AWS account."
   sql = <<-EOQ
     with parsed_entries as (
@@ -181,7 +181,7 @@ query "monthly_cost_by_tag" {
 }
 
 query "top_10_tags_by_cost" {
-  title       = "Top 10 Tags by Cost"
+  title       = "Top 10 Tags"
   description = "List of top 10 tags with the highest cost in the selected AWS account."
   sql = <<-EOQ
     with parsed_entries as (
@@ -233,7 +233,7 @@ query "top_10_tags_by_cost" {
 }
 
 query "tagged_resource_cost_breakdown" {
-  title       = "Tagged Resource Cost Breakdown"
+  title       = "Tagged Resource Cost"
   description = "Detailed cost breakdown of resources with tags."
   sql = <<-EOQ
     with parsed_entries as (
@@ -243,6 +243,7 @@ query "tagged_resource_cost_breakdown" {
       line_item_usage_account_id,
       line_item_unblended_cost,
       product_region_code,
+      line_item_usage_account_id,
       line_item_resource_id,
       line_item_product_code
     from 
@@ -255,6 +256,7 @@ query "tagged_resource_cost_breakdown" {
         tag_key,
         tag_value,
         line_item_unblended_cost,
+        line_item_usage_account_id,
         line_item_resource_id,
         line_item_product_code,
         product_region_code
@@ -265,8 +267,9 @@ query "tagged_resource_cost_breakdown" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      line_item_resource_id as "Resource ID",
-      line_item_product_code as "Service",
+      --line_item_resource_id as "Resource",
+      --line_item_product_code as "Service",
+      line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
@@ -275,8 +278,9 @@ query "tagged_resource_cost_breakdown" {
       tag_value <> '""'
     group by 
       concat(tag_key, ': ', tag_value),
-      line_item_resource_id,
-      line_item_product_code,
+      --line_item_resource_id,
+      --line_item_product_code,
+      line_item_usage_account_id,
       product_region_code
     order by sum(line_item_unblended_cost) desc;
   EOQ
@@ -285,7 +289,7 @@ query "tagged_resource_cost_breakdown" {
 }
 
 query "untagged_resource_cost_breakdown" {
-  title       = "Untagged Resources Cost Breakdown"
+  title       = "Untagged Resources Cost"
   description = "Detailed cost breakdown of resources without any tags."
   sql = <<-EOQ
     with resource_tags_exploded as (
@@ -334,9 +338,9 @@ query "untagged_resource_cost_breakdown" {
         tag_status_by_resource
       where 
         all_tags_empty = true
-      
+
       union all
-      
+
       -- Resources with no tags at all
       select 
         line_item_resource_id,
@@ -351,8 +355,9 @@ query "untagged_resource_cost_breakdown" {
         and line_item_resource_id is not null
     )
     select 
-      line_item_resource_id as "Resource ID",
+      line_item_resource_id as "Resource",
       line_item_product_code as "Service",
+      line_item_usage_account_id as "Account",
       case
         when line_item_resource_id like 'arn:aws%' then
           case
@@ -362,7 +367,6 @@ query "untagged_resource_cost_breakdown" {
         else
           coalesce(product_region_code, 'global')
       end as "Region",
-      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       combined_resources

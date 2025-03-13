@@ -49,7 +49,7 @@ dashboard "cost_by_resource_dashboard" {
   container {
     # Cost Trend and Top Resources
     chart {
-      title = "Monthly Resource Cost Trend"
+      title = "Monthly Cost Trend"
       type  = "column"
       width = 6
       query = query.resource_cost_trend
@@ -60,7 +60,7 @@ dashboard "cost_by_resource_dashboard" {
     }
 
     chart {
-      title = "Top 10 Most Expensive Resources"
+      title = "Top 10 Resources"
       type  = "table"
       width = 6
       query = query.top_resources_by_cost
@@ -74,7 +74,7 @@ dashboard "cost_by_resource_dashboard" {
   container {
     # Detailed Table
     table {
-      title = "Resource Cost Breakdown"
+      title = "Resource Costs"
       width = 12
       query = query.resource_cost_breakdown
       args  = {
@@ -123,7 +123,7 @@ query "resource_currency" {
 }
 
 query "resource_cost_trend" {
-  title       = "Monthly Resource Cost Trend"
+  title       = "Monthly Cost Trend"
   description = "Cost trend over the last 6 months for selected AWS account and service."
   sql = <<-EOQ
     select 
@@ -146,11 +146,13 @@ query "resource_cost_trend" {
 }
 
 query "top_resources_by_cost" {
-  title       = "Top 10 Most Expensive Resources"
+  title       = "Top 10 Resources"
   description = "Top 10 most expensive resources for selected AWS account and service."
   sql = <<-EOQ
     select 
       line_item_resource_id as "Resource",
+      line_item_usage_account_id as "Account",
+      coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -159,7 +161,9 @@ query "top_resources_by_cost" {
       and ('all' in ($2) or line_item_product_code in $2)
       and line_item_resource_id is not null
     group by 
-      line_item_resource_id
+      line_item_resource_id,
+      line_item_usage_account_id,
+      "Region"
     order by 
       sum(line_item_unblended_cost) desc
     limit 10;

@@ -49,7 +49,7 @@ dashboard "cost_by_service_dashboard" {
   container {
     # Cost Trend Graphs
     chart {
-      title = "Monthly Service Cost Trend"
+      title = "Monthly Cost Trend"
       #type  = "bar"
       width = 6
       query = query.service_monthly_cost
@@ -77,9 +77,9 @@ dashboard "cost_by_service_dashboard" {
   }
 
   container {
-    # Detailed Tables
+    # Detailed Table
     table {
-      title = "Service Cost Details"
+      title = "Service Costs by Account"
       width = 12
       query = query.service_cost_details
       args = {
@@ -128,7 +128,7 @@ query "service_currency" {
 }
 
 query "service_monthly_cost" {
-  title       = "Monthly Service Cost Trend"
+  title       = "Monthly Cost Trend"
   description = "Aggregated cost trend over the last 6 months for the selected AWS account."
   sql = <<-EOQ
     select 

@@ -63,7 +63,7 @@ dashboard "cost_usage_dashboard" {
   container {
     # Tables
     chart {
-      title = "Top 10 Accounts by Cost"
+      title = "Top 10 Accounts"
       type  = "table"
       width = 6
       query = query.top_accounts
@@ -73,7 +73,7 @@ dashboard "cost_usage_dashboard" {
     }
 
     chart {
-      title = "Top 10 Regions by Cost"
+      title = "Top 10 Regions"
       type  = "table"
       width = 6
       query = query.top_regions
@@ -83,7 +83,7 @@ dashboard "cost_usage_dashboard" {
     }
 
     chart {
-      title = "Top 10 Services by Cost"
+      title = "Top 10 Services"
       type  = "table"
       width = 6
       query = query.top_services
@@ -93,7 +93,8 @@ dashboard "cost_usage_dashboard" {
     }
 
     chart {
-      title = "Top 10 Resources by Cost"
+      title = "Top 10 Resources"
+
       type  = "table"
       width = 6
       query = query.top_resources
@@ -112,7 +113,7 @@ query "currency" {
   sql = <<-EOQ
     select distinct line_item_currency_code as "Currency"
     from aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1) or line_item_usage_account_id IN $1);
   EOQ
   param "line_item_usage_account_ids" {}
@@ -124,7 +125,7 @@ query "total_cost" {
   sql = <<-EOQ
     select round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1) or line_item_usage_account_id in $1);
   EOQ
   param "line_item_usage_account_ids" {}
@@ -134,19 +135,19 @@ query "monthly_cost" {
   title       = "Monthly Cost Trend"
   description = "Cost trend over the past 6 months."
   sql = <<-EOQ
-    select 
+    select
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
       line_item_usage_account_id as "Account Id",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
+    from
       aws_cost_and_usage_report
-    where 
+    where
       line_item_usage_start_date >= current_date - interval '6' month
       and ('all' in ($1) or line_item_usage_account_id in $1)
     group by
       date_trunc('month', line_item_usage_start_date),
       line_item_usage_account_id
-    order by 
+    order by
       date_trunc('month', line_item_usage_start_date),
       line_item_usage_account_id;
   EOQ
@@ -157,19 +158,19 @@ query "daily_cost" {
   title       = "Daily Cost Trend"
   description = "Aggregated cost trend over the last 30 days across AWS accounts, grouped by account ID."
   sql = <<-EOQ
-    select 
+    select
       strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
-      line_item_usage_account_id as "AWS Account",
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
+    from
       aws_cost_and_usage_report
-    where 
+    where
       line_item_usage_start_date >= current_date - interval '30' day
       and ('all' in ($1) or line_item_usage_account_id in $1)
-    group by 
+    group by
       date_trunc('day', line_item_usage_start_date),
       line_item_usage_account_id
-    order by 
+    order by
       date_trunc('day', line_item_usage_start_date),
       line_item_usage_account_id;
   EOQ
@@ -178,14 +179,14 @@ query "daily_cost" {
 }
 
 query "top_accounts" {
-  title       = "Top 10 Accounts by Cost"
+  title       = "Top 10 Accounts"
   description = "List of top 10 AWS accounts with the highest costs."
   sql = <<-EOQ
-    select 
-      line_item_usage_account_id as "AWS Account",
+    select
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1) or line_item_usage_account_id in $1)
     group by 1
     order by 2 desc
@@ -195,14 +196,14 @@ query "top_accounts" {
 }
 
 query "top_regions" {
-  title       = "Top 10 Regions by Cost"
+  title       = "Top 10 Regions"
   description = "List of top 10 AWS regions with the highest costs."
   sql = <<-EOQ
-    select 
-      coalesce(product_region_code, 'global') as "AWS Region",
+    select
+      coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1) or line_item_usage_account_id in $1)
     group by 1
     order by 2 desc
@@ -212,14 +213,14 @@ query "top_regions" {
 }
 
 query "top_services" {
-  title       = "Top 10 Services by Cost"
+  title       = "Top 10 Services"
   description = "List of top 10 AWS services with the highest costs."
   sql = <<-EOQ
-    select 
+    select
       product_service_code as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1) or line_item_usage_account_id in $1)
     group by 1
     order by 2 desc
@@ -229,29 +230,21 @@ query "top_services" {
 }
 
 query "top_resources" {
-  title       = "Top 10 Resources by Cost"
+  title       = "Top 10 Resources"
   description = "List of top 10 AWS resources with the highest costs."
   sql = <<-EOQ
-    select 
-      case 
-        when line_item_resource_id like 'arn:aws:%' then line_item_resource_id
-        else 
-          format(
-            'arn:aws:{}:{}:{}:{}',
-            lower(regexp_replace(line_item_product_code, '^(AWS|Amazon)', '', 'i')),
-            coalesce(nullif(product_region_code, ''), 'global'),
-            line_item_usage_account_id,
-            line_item_resource_id
-          )
-      end as "Resource",
+    select
+      line_item_resource_id as "Resource",
+      line_item_usage_account_id as "Account",
+      coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
+    from
       aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1)  or line_item_usage_account_id in $1)
       and line_item_resource_id is not null
-    group by 1
-    order by 2 desc
+    group by 1, 2, 3
+    order by "Total Cost" desc
     limit 10;
   EOQ
   param "line_item_usage_account_ids" {}

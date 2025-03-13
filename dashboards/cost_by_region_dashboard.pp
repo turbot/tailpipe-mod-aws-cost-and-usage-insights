@@ -39,7 +39,7 @@ dashboard "cost_by_region_dashboard" {
   container {
     # Cost Trend Graphs
     chart {
-      title = "Monthly Region Cost Trend"
+      title = "Monthly Cost Trend"
       #type  = "bar"
       width = 6
       query = query.region_monthly_cost
@@ -53,7 +53,7 @@ dashboard "cost_by_region_dashboard" {
     }
 
     chart {
-      title = "Top 10 Regions by Cost"
+      title = "Top 10 Regions"
       type  = "table"
       width = 6
       query = query.region_top_10
@@ -64,9 +64,9 @@ dashboard "cost_by_region_dashboard" {
   }
 
   container {
-    # Detailed Tables
+    # Detailed Table
     table {
-      title = "Region Cost Details"
+      title = "Region Costs by Account"
       width = 12
       query = query.region_cost_details
        args  = {
@@ -111,7 +111,7 @@ query "region_currency" {
 }
 
 query "region_monthly_cost" {
-  title       = "Monthly Region Cost Trend"
+  title       = "Monthly Cost Trend"
   description = "Aggregated cost trend over the last 6 months across AWS regions."
   sql = <<-EOQ
     select 
@@ -134,7 +134,7 @@ query "region_monthly_cost" {
 }
 
 query "region_top_10" {
-  title       = "Top 10 Regions by Cost"
+  title       = "Top 10 Regions"
   description = "List of top 10 AWS regions with the highest costs."
   sql = <<-EOQ
     select 
