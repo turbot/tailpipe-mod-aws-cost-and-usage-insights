@@ -61,7 +61,7 @@ dashboard "cost_by_resource_dashboard" {
 
     chart {
       title = "Top 10 Most Expensive Resources"
-      type  = "line"
+      type  = "table"
       width = 6
       query = query.top_resources_by_cost
       args  = {

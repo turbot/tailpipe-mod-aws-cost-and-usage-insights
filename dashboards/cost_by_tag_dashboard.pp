@@ -56,7 +56,7 @@ dashboard "tag_cost_detail_dashboard" {
 
     chart {
       title = "Top 10 Tags by Cost"
-      type  = "pie"
+      type  = "table"
       width = 6
       query = query.top_10_tags_by_cost
       args  = {

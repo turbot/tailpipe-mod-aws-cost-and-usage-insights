@@ -54,7 +54,7 @@ dashboard "cost_by_region_dashboard" {
 
     chart {
       title = "Top 10 Regions by Cost"
-      type  = "donut"
+      type  = "table"
       width = 6
       query = query.region_top_10
        args  = {

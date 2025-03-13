@@ -54,7 +54,7 @@ dashboard "cost_by_account_dashboard" {
 
     chart {
       title = "Top 10 Accounts by Cost"
-      type  = "column"
+      type  = "table"
       width = 6
       query = query.account_top_10
       args  = {

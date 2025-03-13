@@ -66,7 +66,7 @@ dashboard "cost_by_service_dashboard" {
 
     chart {
       title = "Top 10 Services by Cost"
-      type  = "donut"
+      type  = "table"
       width = 6
       query = query.service_top_10
       args = {
