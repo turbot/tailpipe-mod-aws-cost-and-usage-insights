@@ -10,7 +10,7 @@ dashboard "cost_usage_dashboard" {
   container {
     # Multi-select Account Input
     input "accounts" {
-      title       = "Select AWS Accounts:"
+      title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -47,20 +47,6 @@ dashboard "cost_usage_dashboard" {
       args  = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
-
-      axes {
-        x {
-          title {
-            value = "Month"
-          }
-        }
-        y {
-          title {
-            value = "Cost ($)"
-          }
-          min = 0
-        }
-      }
     }
 
     chart {
@@ -70,19 +56,6 @@ dashboard "cost_usage_dashboard" {
       query = query.daily_cost
       args  = {
         "line_item_usage_account_ids" = self.input.accounts.value
-      }
-      axes {
-        x {
-          title {
-            value = "Day"
-          }
-        }
-        y {
-          title {
-            value = "Cost ($)"
-          }
-          min = 0
-        }
       }
     }
   }

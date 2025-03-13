@@ -7,7 +7,7 @@ dashboard "cost_by_service_dashboard" {
   }
 
   input "account_input" {
-    title       = "Select account:"
+    title       = "Select accounts:"
     description = "Choose a single AWS account to analyze"
     type        = "multiselect"
     width       = 2
@@ -15,7 +15,7 @@ dashboard "cost_by_service_dashboard" {
   }
 
   input "service_input" {
-    title       = "Select service:"
+    title       = "Select services:"
     description = "Select an AWS service to filter resources."
     type        = "multiselect"
     query       = query.service_input
@@ -50,7 +50,7 @@ dashboard "cost_by_service_dashboard" {
     # Cost Trend Graphs
     chart {
       title = "Monthly Service Cost Trend"
-      type  = "bar"
+      #type  = "bar"
       width = 6
       query = query.service_monthly_cost
       args = {

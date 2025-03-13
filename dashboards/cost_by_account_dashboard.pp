@@ -9,7 +9,7 @@ dashboard "cost_by_account_dashboard" {
  container {
     # Multi-select Account Input
     input "accounts_input" {
-      title       = "Select AWS Accounts:"
+      title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -47,20 +47,6 @@ dashboard "cost_by_account_dashboard" {
         "line_item_usage_account_ids" = self.input.accounts_input.value
       }
 
-      axes {
-        x {
-          title {
-            value = "Month"
-          }
-        }
-        y {
-          title {
-            value = "Cost ($)"
-          }
-          min = 0
-        }
-      }
-
       series "Total Cost" {
         title = "Account Costs"
       }
@@ -75,19 +61,6 @@ dashboard "cost_by_account_dashboard" {
         "line_item_usage_account_ids" = self.input.accounts_input.value
       }
 
-      axes {
-        x {
-          title {
-            value = "Account"
-          }
-        }
-        y {
-          title {
-            value = "Cost ($)"
-          }
-          min = 0
-        }
-      }
     }
   }
 

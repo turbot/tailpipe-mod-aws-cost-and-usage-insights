@@ -9,7 +9,7 @@ dashboard "cost_by_region_dashboard" {
   container {
     # Multi-select Account Input
     input "region_accounts_input" {
-      title       = "Select AWS Accounts:"
+      title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -40,7 +40,7 @@ dashboard "cost_by_region_dashboard" {
     # Cost Trend Graphs
     chart {
       title = "Monthly Region Cost Trend"
-      type  = "bar"
+      #type  = "bar"
       width = 6
       query = query.region_monthly_cost
        args  = {

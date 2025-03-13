@@ -7,7 +7,7 @@ dashboard "cost_by_resource_dashboard" {
   }
 
   input "account" {
-    title       = "Select account:"
+    title       = "Select accounts:"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.resource_aws_account_input
@@ -15,7 +15,7 @@ dashboard "cost_by_resource_dashboard" {
   }
 
   input "service" {
-    title       = "Select service:"
+    title       = "Select services:"
     description = "Select an AWS service to filter resources."
     type        = "multiselect"
     query       = query.resource_aws_service_input

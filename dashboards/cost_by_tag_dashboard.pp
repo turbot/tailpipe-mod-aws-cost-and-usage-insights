@@ -7,7 +7,7 @@ dashboard "tag_cost_detail_dashboard" {
   }
 
   input "account" {
-    title       = "Select account:"
+    title       = "Select accounts:"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.tag_details_aws_account_input
@@ -37,25 +37,11 @@ dashboard "tag_cost_detail_dashboard" {
     # Cost Trend and Key/Value Breakdown
     chart {
       title = "Monthly Cost by Tag"
-      type  = "bar"
+      #type  = "bar"
       width = 6
       query = query.monthly_cost_by_tag
       args  = {
         "line_item_usage_account_id" = self.input.account.value
-      }
-
-      axes {
-        y {
-          title {
-            value = "Month"
-          }
-        }
-        x {
-          title {
-            value = "Cost ($)"
-          }
-          min = 0
-        }
       }
 
       legend {
