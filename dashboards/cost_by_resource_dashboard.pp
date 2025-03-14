@@ -57,6 +57,11 @@ dashboard "cost_by_resource_dashboard" {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
       }
+
+      legend {
+        display  = "none"
+        position = "bottom"
+      }
     }
 
     chart {
@@ -128,6 +133,7 @@ query "resource_cost_trend" {
   sql = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
+      line_item_resource_id,
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -136,7 +142,8 @@ query "resource_cost_trend" {
       and ('all' in ($2) or line_item_product_code in $2)
       and line_item_usage_start_date >= current_date - interval '6' month
     group by 
-      date_trunc('month', line_item_usage_start_date)
+      date_trunc('month', line_item_usage_start_date),
+      line_item_resource_id
     order by 
       date_trunc('month', line_item_usage_start_date);
   EOQ
@@ -177,18 +184,8 @@ query "resource_cost_breakdown" {
   title       = "Resource Cost Breakdown"
   description = "Detailed breakdown of costs for each resource, including service, region, account, and cost."
   sql = <<-EOQ
-    select 
-      case 
-        when line_item_resource_id like 'arn:aws:%' then line_item_resource_id
-        else 
-          format(
-            'arn:aws:{}:{}:{}:{}',
-            lower(regexp_replace(line_item_product_code, '^(AWS|Amazon)', '', 'i')),
-            coalesce(nullif(product_region_code, ''), 'global'),
-            line_item_usage_account_id,
-            line_item_resource_id
-          )
-      end as "Resource",
+    select
+      line_item_resource_id as "Resource",
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
@@ -200,17 +197,7 @@ query "resource_cost_breakdown" {
       and ('all' in ($2) or line_item_product_code in $2)
       and line_item_resource_id is not null
     group by 
-      case 
-        when line_item_resource_id like 'arn:aws:%' then line_item_resource_id
-        else 
-          format(
-            'arn:aws:{}:{}:{}:{}',
-            lower(regexp_replace(line_item_product_code, '^(AWS|Amazon)', '', 'i')),
-            coalesce(nullif(product_region_code, ''), 'global'),
-            line_item_usage_account_id,
-            line_item_resource_id
-          )
-      end,
+      "Resource",
       line_item_product_code,
       coalesce(product_region_code, 'global'),
       line_item_usage_account_id

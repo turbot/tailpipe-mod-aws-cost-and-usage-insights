@@ -40,7 +40,8 @@ dashboard "cost_by_account_dashboard" {
     # Cost Trend Charts
     chart {
       title = "Monthly Cost Trend"
-      type  = "column"
+      #type  = "column"
+      type  = "line"
       width = 6
       query = query.monthly_cost_trend
       args  = {
