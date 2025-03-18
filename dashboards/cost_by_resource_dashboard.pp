@@ -97,7 +97,7 @@ query "total_resource_cost" {
   description = "Total cost for all resources in the selected AWS account and service."
   sql = <<-EOQ
     select 
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -160,7 +160,7 @@ query "top_resources_by_cost" {
       line_item_resource_id as "Resource",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -189,7 +189,7 @@ query "resource_cost_breakdown" {
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 

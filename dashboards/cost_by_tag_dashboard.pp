@@ -37,7 +37,7 @@ dashboard "tag_cost_detail_dashboard" {
     # Cost Trend and Key/Value Breakdown
     chart {
       title  = "Monthly Cost Trend"
-      #type  = "bar"
+      type  = "bar"
       width = 6
       query = query.monthly_cost_by_tag
       args  = {
@@ -62,8 +62,6 @@ dashboard "tag_cost_detail_dashboard" {
       args  = {
         "line_item_usage_account_id" = self.input.account.value
       }
-
-
     }
   }
 
@@ -221,7 +219,7 @@ query "top_10_tags_by_cost" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      round(cost, 2) as "Total Cost"
+      format('{:.2f}', round(cost, 2)) as "Total Cost"
     from 
       tag_costs
     order by cost desc
@@ -267,19 +265,15 @@ query "tagged_resource_cost_breakdown" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      --line_item_resource_id as "Resource",
-      --line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       formatted_entries
     where
       tag_value <> '""'
     group by 
       concat(tag_key, ': ', tag_value),
-      --line_item_resource_id,
-      --line_item_product_code,
       line_item_usage_account_id,
       product_region_code
     order by sum(line_item_unblended_cost) desc;
@@ -367,7 +361,7 @@ query "untagged_resource_cost_breakdown" {
         else
           coalesce(product_region_code, 'global')
       end as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       combined_resources
     where 

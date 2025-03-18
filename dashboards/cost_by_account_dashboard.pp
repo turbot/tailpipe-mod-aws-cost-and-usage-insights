@@ -85,7 +85,7 @@ query "account_total_cost" {
   description = "Aggregated total cost across all AWS accounts."
   sql = <<-EOQ
     select 
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -141,7 +141,7 @@ query "account_top_10" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
@@ -162,7 +162,7 @@ query "account_cost_details" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost",
+      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost",
     from 
       aws_cost_and_usage_report
     where
