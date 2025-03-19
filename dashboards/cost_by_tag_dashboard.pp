@@ -37,7 +37,7 @@ dashboard "tag_cost_detail_dashboard" {
     # Cost Trend and Key/Value Breakdown
     chart {
       title  = "Monthly Cost Trend"
-      type  = "bar"
+      type  = "column"
       width = 6
       query = query.monthly_cost_by_tag
       args  = {
