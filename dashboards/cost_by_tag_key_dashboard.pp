@@ -85,19 +85,6 @@ dashboard "tag_key_cost_detail_dashboard" {
       }
     }
   }
-
-  container {
-    # Resources by Tag Value
-    table {
-      title = "Resources by Tag Value"
-      width = 12
-      query = query.resources_by_tag_value
-      args  = {
-        "line_item_usage_account_id" = self.input.tag_key_account.value,
-        "tag_key" = self.input.tag_key.value
-      }
-    }
-  }
 }
 
 # Query Definitions
@@ -281,65 +268,6 @@ query "tag_value_cost_breakdown" {
     group by 
       tag_key,
       tag_value,
-      line_item_usage_account_id,
-      product_region_code
-    order by 
-      "Total Cost" desc;
-  EOQ
-
-  param "line_item_usage_account_id" {}
-  param "tag_key" {}
-}
-
-query "resources_by_tag_value" {
-  title       = "Resources by Tag Value"
-  description = "List of resources with their costs grouped by tag value for the selected tag keys."
-  sql = <<-EOQ
-    with parsed_entries as (
-      select 
-        distinct unnest(json_keys(resource_tags)) as tag_key,
-        json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
-        line_item_usage_account_id,
-        line_item_unblended_cost,
-        product_region_code,
-        line_item_resource_id,
-        line_item_product_code
-      from 
-        aws_cost_and_usage_report
-      where
-        resource_tags is not null
-        and line_item_resource_id is not null
-    ),
-    filtered_entries as (
-      select
-        tag_key,
-        tag_value,
-        line_item_usage_account_id,
-        line_item_unblended_cost,
-        product_region_code,
-        line_item_resource_id,
-        line_item_product_code
-      from 
-        parsed_entries
-      where 
-        ('all' in ($1) or line_item_usage_account_id in $1)
-        and ('all' in ($2) or tag_key in $2)
-        and tag_value <> '""'
-    )
-    select 
-      replace(tag_value, '"', '') as "Tag Value",
-      line_item_resource_id as "Resource ID",
-      line_item_product_code as "Service",
-      line_item_usage_account_id as "Account ID",
-      coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-    from 
-      filtered_entries
-    group by 
-      tag_key,
-      tag_value,
-      line_item_resource_id,
-      line_item_product_code,
       line_item_usage_account_id,
       product_region_code
     order by 
