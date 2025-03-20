@@ -3,7 +3,7 @@ dashboard "cost_by_region_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/CostExplorer"
+    service = "AWS/Billing"
   }
 
   container {

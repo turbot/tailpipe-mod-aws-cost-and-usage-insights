@@ -3,7 +3,7 @@ dashboard "tag_key_cost_detail_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/CostExplorer"
+    service = "AWS/Billing"
   }
 
   input "tag_key_account" {
