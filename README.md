@@ -1,17 +1,17 @@
-# AWS Cost and Usage Report Detections Mod for Powerpipe
+# AWS Cost and Usage Report Thrifty Mod for Powerpipe
 
 [Tailpipe](https://tailpipe.io) is an open-source CLI tool that allows you to collect logs and query them with SQL.
 
 [AWS](https://aws.amazon.com/) provides on-demand cloud computing platforms and APIs to authenticated customers on a metered pay-as-you-go basis.
 
-The [AWS Cost and Usage Report Detections Mod](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-usage-report-detections) contains pre-built dashboards which can be used to monitor and analyze costs across your AWS accounts.
+The [AWS Cost and Usage Report Thrifty Mod](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-usage-report-thrifty) contains pre-built dashboards which can be used to monitor and analyze costs across your AWS accounts.
 
 View insights in dashboards:
 ![image](docs/images/aws_cost_usage_dashboard.png)
 
 ## Documentation
 
-- **[Dashboards →](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-usage-report-detections/dashboards)**
+- **[Dashboards →](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-usage-report-thrifty/dashboards)**
 
 ## Getting Started
 
@@ -36,7 +36,7 @@ Install the mod:
 ```sh
 mkdir dashboards
 cd dashboards
-powerpipe mod install github.com/turbot/tailpipe-mod-aws-cost-usage-report-detections
+powerpipe mod install github.com/turbot/tailpipe-mod-aws-cost-usage-report-thrifty
 ```
 
 ### Browsing Dashboards
@@ -72,4 +72,4 @@ Want to help but don't know where to start? Pick up one of the `help wanted` iss
 
 - [Powerpipe](https://github.com/turbot/powerpipe/labels/help%20wanted)
 - [Tailpipe](https://github.com/turbot/tailpipe/labels/help%20wanted)
-- [AWS Cost and Usage Report Detections Mod](https://github.com/turbot/tailpipe-mod-aws-cost-usage-report-detections/labels/help%20wanted)
+- [AWS Cost and Usage Report Thrifty Mod](https://github.com/turbot/tailpipe-mod-aws-cost-usage-report-thrifty/labels/help%20wanted)
