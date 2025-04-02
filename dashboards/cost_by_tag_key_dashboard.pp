@@ -58,8 +58,7 @@ dashboard "tag_key_cost_detail_dashboard" {
         "tag_key" = self.input.tag_key.value
       }
       legend {
-        display  = "none"
-        position = "bottom"
+        display = "none"
       }
     }
 
@@ -243,7 +242,8 @@ query "top_10_tag_values_by_cost" {
     )
     select 
       replace(tag_with_value, '"', '') as "Tag Value",
-      format('{:.2f}', round(cost, 2)) as "Total Cost"
+      --format('{:.2f}', round(cost, 2)) as "Total Cost"
+      round(cost, 2) as "Total Cost"
     from 
       tag_costs
     order by cost desc
@@ -288,7 +288,8 @@ query "tag_value_cost_breakdown" {
       replace(tag_value, '"', '') as "Tag Value",
       line_item_usage_account_id as "Account ID",
       coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}',round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}',round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       filtered_entries
     group by 

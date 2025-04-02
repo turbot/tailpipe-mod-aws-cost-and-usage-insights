@@ -41,11 +41,15 @@ dashboard "cost_by_account_dashboard" {
     chart {
       title = "Monthly Cost Trend"
       #type  = "column"
-      type  = "line"
+      #type  = "line"
       width = 6
       query = query.monthly_cost_trend
       args  = {
         "line_item_usage_account_ids" = self.input.accounts_input.value
+      }
+
+      legend {
+        display = "none"
       }
 
       series "Total Cost" {
@@ -84,11 +88,12 @@ query "account_total_cost" {
   title       = "Total Cost"
   description = "Aggregated total cost across all AWS accounts."
   sql = <<-EOQ
-    select 
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-    from 
+    select
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
       aws_cost_and_usage_report
-    where 
+    where
       ('all' in ($1) or line_item_usage_account_id in $1);
   EOQ
 
@@ -141,7 +146,8 @@ query "account_top_10" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
@@ -162,7 +168,8 @@ query "account_cost_details" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost",
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost",
+      round(sum(line_item_unblended_cost), 2) as "Total Cost",
     from 
       aws_cost_and_usage_report
     where

@@ -47,6 +47,10 @@ dashboard "cost_usage_dashboard" {
       args  = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
+
+      legend {
+        display = "none"
+      }
     }
 
     chart {
@@ -56,6 +60,10 @@ dashboard "cost_usage_dashboard" {
       query = query.daily_cost
       args  = {
         "line_item_usage_account_ids" = self.input.accounts.value
+      }
+
+      legend {
+        display = "none"
       }
     }
   }
@@ -123,9 +131,10 @@ query "total_cost" {
   title       = "Total Cost"
   description = "Total unblended cost for selected AWS accounts."
   sql = <<-EOQ
-    select 
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-    from 
+    select
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1);
@@ -186,15 +195,19 @@ query "top_accounts" {
   sql = <<-EOQ
     select
       line_item_usage_account_id as "Account",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-    from 
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
-    group by 1
-    order by 2 desc
+    group by
+      "Account"
+    order by
+      "Total Cost" desc
     limit 10;
   EOQ
+
   param "line_item_usage_account_ids" {}
 }
 
@@ -204,15 +217,19 @@ query "top_regions" {
   sql = <<-EOQ
     select
       coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-    from 
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
-    group by 1
-    order by 2 desc
+    group by
+      "Region"
+    order by
+      "Total Cost" desc
     limit 10;
   EOQ
+
   param "line_item_usage_account_ids" {}
 }
 
@@ -222,8 +239,9 @@ query "top_services" {
   sql = <<-EOQ
     select
       product_service_code as "Service",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-    from 
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
@@ -242,7 +260,8 @@ query "top_resources" {
       line_item_resource_id as "Resource",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
     where

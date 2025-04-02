@@ -60,7 +60,6 @@ dashboard "cost_by_service_dashboard" {
 
       legend {
         display  = "none"
-        position = "bottom"
       }
     }
 
@@ -97,7 +96,8 @@ query "service_total_cost" {
   description = "Total unblended cost for the selected AWS account."
   sql = <<-EOQ
     select 
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -158,7 +158,8 @@ query "service_top_10" {
   sql = <<-EOQ
     select 
       line_item_product_code as "Service",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -182,7 +183,8 @@ query "service_cost_details" {
     select 
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 

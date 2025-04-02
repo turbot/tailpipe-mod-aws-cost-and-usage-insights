@@ -48,7 +48,6 @@ dashboard "cost_by_region_dashboard" {
       }
       legend {
         display  = "none"
-        position = "bottom"
       }
     }
 
@@ -83,7 +82,8 @@ query "region_total_cost" {
   description = "Total unblended cost across all AWS regions."
   sql = <<-EOQ
     select 
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -139,7 +139,8 @@ query "region_top_10" {
   sql = <<-EOQ
     select 
       coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
@@ -161,7 +162,8 @@ query "region_cost_details" {
     select 
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Cost"
+      round(sum(line_item_unblended_cost), 2) as "Cost"
     from 
       aws_cost_and_usage_report
     where

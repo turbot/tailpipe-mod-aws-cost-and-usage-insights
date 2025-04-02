@@ -45,8 +45,7 @@ dashboard "tag_cost_detail_dashboard" {
       }
 
       legend {
-        display  = "none"
-        position = "bottom"
+        display = "none"
       }
 
       series "Total Cost" {
@@ -219,7 +218,8 @@ query "top_10_tags_by_cost" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      format('{:.2f}', round(cost, 2)) as "Total Cost"
+      --format('{:.2f}', round(cost, 2)) as "Total Cost"
+      round(cost, 2) as "Total Cost"
     from 
       tag_costs
     order by cost desc
@@ -267,7 +267,8 @@ query "tagged_resource_cost_breakdown" {
       concat(tag_key, ': ', tag_value) as "Tag",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       formatted_entries
     where
@@ -361,7 +362,8 @@ query "untagged_resource_cost_breakdown" {
         else
           coalesce(product_region_code, 'global')
       end as "Region",
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       combined_resources
     where 
