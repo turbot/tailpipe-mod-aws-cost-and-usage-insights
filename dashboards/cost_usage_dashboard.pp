@@ -23,14 +23,8 @@ dashboard "cost_usage_dashboard" {
     card {
       width = 2
       query = query.total_cost
-      args  = {
-        "line_item_usage_account_ids" = self.input.accounts.value
-      }
-    }
-
-    card {
-      width = 2
-      query = query.currency
+      icon  = "attach_money"
+      type  = "info"
       args  = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
@@ -115,29 +109,20 @@ dashboard "cost_usage_dashboard" {
 
 # Queries
 
-query "currency" {
-  title       = "Currency"
-  description = "Shows the currency used for cost calculations."
-  sql = <<-EOQ
-    select distinct line_item_currency_code as "Currency"
-    from aws_cost_and_usage_report
-    where
-      ('all' in ($1) or line_item_usage_account_id IN $1);
-  EOQ
-  param "line_item_usage_account_ids" {}
-}
-
 query "total_cost" {
   title       = "Total Cost"
   description = "Total unblended cost for selected AWS accounts."
   sql = <<-EOQ
     select
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      'Total Cost (' || line_item_currency_code || ')' as label,
+      round(sum(line_item_unblended_cost), 2) as value
     from
       aws_cost_and_usage_report
     where
-      ('all' in ($1) or line_item_usage_account_id in $1);
+      ('all' in ($1) or line_item_usage_account_id in $1)
+    group by
+      line_item_currency_code;
   EOQ
   param "line_item_usage_account_ids" {}
 }
