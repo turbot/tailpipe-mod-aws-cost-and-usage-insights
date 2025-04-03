@@ -1,5 +1,6 @@
 dashboard "cost_by_resource_dashboard" {
-  title = "Cost by Resource Dashboard"
+  title         = "Cost by Resource Dashboard"
+  documentation = file("./dashboards/docs/cost_by_resource_dashboard.md")
 
   tags = {
     type    = "Dashboard"
@@ -19,10 +20,10 @@ dashboard "cost_by_resource_dashboard" {
     description = "Select an AWS service to filter resources."
     type        = "multiselect"
     query       = query.resource_aws_service_input
-    args        = {
+    args = {
       "line_item_usage_account_id" = self.input.account.value
     }
-    width       = 2
+    width = 2
   }
 
   container {
@@ -30,7 +31,7 @@ dashboard "cost_by_resource_dashboard" {
     card {
       width = 2
       query = query.total_resource_cost
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
       }
@@ -39,7 +40,7 @@ dashboard "cost_by_resource_dashboard" {
     card {
       width = 2
       query = query.resource_currency
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
       }
@@ -53,7 +54,7 @@ dashboard "cost_by_resource_dashboard" {
       type  = "column"
       width = 6
       query = query.resource_cost_trend
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
       }
@@ -68,7 +69,7 @@ dashboard "cost_by_resource_dashboard" {
       type  = "table"
       width = 6
       query = query.top_resources_by_cost
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
       }
@@ -81,7 +82,7 @@ dashboard "cost_by_resource_dashboard" {
       title = "Resource Costs"
       width = 12
       query = query.resource_cost_breakdown
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
       }
@@ -94,7 +95,7 @@ dashboard "cost_by_resource_dashboard" {
 query "total_resource_cost" {
   title       = "Total Resource Cost"
   description = "Total cost for all resources in the selected AWS account and service."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
@@ -112,7 +113,7 @@ query "total_resource_cost" {
 query "resource_currency" {
   title       = "Currency"
   description = "Currency used for cost calculations in the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       distinct line_item_currency_code as "Currency"
     from 
@@ -130,7 +131,7 @@ query "resource_currency" {
 query "resource_cost_trend" {
   title       = "Monthly Cost Trend"
   description = "Cost trend over the last 6 months for selected AWS account and service."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
       line_item_resource_id,
@@ -155,7 +156,7 @@ query "resource_cost_trend" {
 query "top_resources_by_cost" {
   title       = "Top 10 Resources"
   description = "Top 10 most expensive resources for selected AWS account and service."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       line_item_resource_id as "Resource",
       line_item_usage_account_id as "Account",
@@ -184,7 +185,7 @@ query "top_resources_by_cost" {
 query "resource_cost_breakdown" {
   title       = "Resource Cost Breakdown"
   description = "Detailed breakdown of costs for each resource, including service, region, account, and cost."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       line_item_resource_id as "Resource",
       line_item_product_code as "Service",
@@ -214,7 +215,7 @@ query "resource_cost_breakdown" {
 query "resource_aws_service_input" {
   title       = "AWS Service Selection"
   description = "Select an AWS service for filtering resources."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       'All' as label,
       'all' as value
@@ -236,7 +237,7 @@ query "resource_aws_service_input" {
 query "resource_aws_account_input" {
   title       = "AWS Account Selection"
   description = "Select an AWS account for filtering dashboard data."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       'All' as label,
       'all' as value

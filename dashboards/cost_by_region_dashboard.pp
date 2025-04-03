@@ -1,5 +1,6 @@
 dashboard "cost_by_region_dashboard" {
-  title = "Cost by Region Dashboard"
+  title         = "Cost by Region Dashboard"
+  documentation = file("./dashboards/docs/cost_by_region_dashboard.md")
 
   tags = {
     type    = "Dashboard"
@@ -22,7 +23,7 @@ dashboard "cost_by_region_dashboard" {
     card {
       width = 2
       query = query.region_total_cost
-       args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.region_accounts_input.value
       }
     }
@@ -30,7 +31,7 @@ dashboard "cost_by_region_dashboard" {
     card {
       width = 2
       query = query.region_currency
-       args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.region_accounts_input.value
       }
     }
@@ -43,7 +44,7 @@ dashboard "cost_by_region_dashboard" {
       #type  = "bar"
       width = 6
       query = query.region_monthly_cost
-       args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.region_accounts_input.value
       }
       legend {
@@ -56,7 +57,7 @@ dashboard "cost_by_region_dashboard" {
       type  = "table"
       width = 6
       query = query.region_top_10
-       args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.region_accounts_input.value
       }
     }
@@ -68,7 +69,7 @@ dashboard "cost_by_region_dashboard" {
       title = "Region Costs by Account"
       width = 12
       query = query.region_cost_details
-       args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.region_accounts_input.value
       }
     }
@@ -80,7 +81,7 @@ dashboard "cost_by_region_dashboard" {
 query "region_total_cost" {
   title       = "Total Region Cost"
   description = "Total unblended cost across all AWS regions."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
@@ -97,7 +98,7 @@ query "region_total_cost" {
 query "region_currency" {
   title       = "Currency"
   description = "Currency used for cost calculations in AWS accounts."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       distinct line_item_currency_code as "Currency"
     from 
@@ -113,7 +114,7 @@ query "region_currency" {
 query "region_monthly_cost" {
   title       = "Monthly Cost Trend"
   description = "Aggregated cost trend over the last 6 months across AWS regions."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
       product_region_code,
@@ -136,7 +137,7 @@ query "region_monthly_cost" {
 query "region_top_10" {
   title       = "Top 10 Regions"
   description = "List of top 10 AWS regions with the highest costs."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       coalesce(product_region_code, 'global') as "Region",
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
@@ -158,7 +159,7 @@ query "region_top_10" {
 query "region_cost_details" {
   title       = "Region Cost Details"
   description = "Detailed cost breakdown per AWS region."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
@@ -182,7 +183,7 @@ query "region_cost_details" {
 query "region_accounts_input" {
   title       = "AWS Account Selection"
   description = "Multi-select input to filter the dashboard by AWS accounts."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       'All' as label,
       'all' as value

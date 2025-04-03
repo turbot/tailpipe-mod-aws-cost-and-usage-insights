@@ -1,5 +1,6 @@
 dashboard "tag_cost_detail_dashboard" {
-  title = "Cost by Tag Dashboard"
+  title         = "Cost by Tag Dashboard"
+  documentation = file("./dashboards/docs/tag_cost_detail_dashboard.md")
 
   tags = {
     type    = "Dashboard"
@@ -19,7 +20,7 @@ dashboard "tag_cost_detail_dashboard" {
     card {
       width = 2
       query = query.tag_total_cost
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
@@ -27,7 +28,7 @@ dashboard "tag_cost_detail_dashboard" {
     card {
       width = 2
       query = query.tag_currency
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
@@ -36,11 +37,11 @@ dashboard "tag_cost_detail_dashboard" {
   container {
     # Cost Trend and Key/Value Breakdown
     chart {
-      title  = "Monthly Cost Trend"
+      title = "Monthly Cost Trend"
       type  = "column"
       width = 6
       query = query.monthly_cost_by_tag
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value
       }
 
@@ -58,7 +59,7 @@ dashboard "tag_cost_detail_dashboard" {
       type  = "table"
       width = 6
       query = query.top_10_tags_by_cost
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
@@ -70,7 +71,7 @@ dashboard "tag_cost_detail_dashboard" {
       title = "Tag Costs by Account and Region"
       width = 12
       query = query.tagged_resource_cost_breakdown
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
@@ -82,7 +83,7 @@ dashboard "tag_cost_detail_dashboard" {
       title = "Untagged Resource Costs"
       width = 12
       query = query.untagged_resource_cost_breakdown
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.account.value
       }
     }
@@ -94,7 +95,7 @@ dashboard "tag_cost_detail_dashboard" {
 query "tag_total_cost" {
   title       = "Total Cost"
   description = "Total unblended cost for the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
@@ -109,7 +110,7 @@ query "tag_total_cost" {
 query "tag_currency" {
   title       = "Currency"
   description = "Currency used for cost calculations in the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       distinct line_item_currency_code as "Currency"
     from 
@@ -125,7 +126,7 @@ query "tag_currency" {
 query "monthly_cost_by_tag" {
   title       = "Monthly Cost Trend"
   description = "Aggregated cost per month for each tag in the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
       select 
         distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -180,7 +181,7 @@ query "monthly_cost_by_tag" {
 query "top_10_tags_by_cost" {
   title       = "Top 10 Tags"
   description = "List of top 10 tags with the highest cost in the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
     select 
       distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -233,7 +234,7 @@ query "top_10_tags_by_cost" {
 query "tagged_resource_cost_breakdown" {
   title       = "Tagged Resource Cost"
   description = "Detailed cost breakdown of resources with tags."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
     select 
       distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -286,7 +287,7 @@ query "tagged_resource_cost_breakdown" {
 query "untagged_resource_cost_breakdown" {
   title       = "Untagged Resources Cost"
   description = "Detailed cost breakdown of resources without any tags."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with resource_tags_exploded as (
       -- Explode all tags for each resource
       select 

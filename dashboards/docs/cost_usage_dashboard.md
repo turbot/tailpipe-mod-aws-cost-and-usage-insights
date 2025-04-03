@@ -1,13 +1,9 @@
 This dashboard answers the following questions:
 
-- What is the total cost across AWS accounts?
-- What is the currency being used for cost calculations?
-- How many AWS accounts are generating costs?
-- How many AWS services are being used across accounts?
-- What is the cost distribution across different AWS services?
-- What is the regional cost distribution?
-- What are the costs by resource type?
-- What are the costs by usage type?
-- What are the top 10 most expensive AWS services?
-- Are there any cost anomalies in the last 30 days?
-- What is the daily cost trend over the last 30 days?
+- What is the total AWS cost across selected accounts?
+- What currency is being used for cost calculations?
+- How has the cost trended over the last 30 days and 6 months?
+- Which AWS accounts incurred the highest costs?
+- What are the top regions incurring costs?
+- Which AWS services contributed most to the cost?
+- What are the most expensive AWS resources?

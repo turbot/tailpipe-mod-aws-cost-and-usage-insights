@@ -1,5 +1,6 @@
 dashboard "cost_by_service_dashboard" {
-  title = "Cost by Service Dashboard"
+  title         = "Cost by Service Dashboard"
+  documentation = file("./dashboards/docs/cost_by_service_dashboard.md")
 
   tags = {
     type    = "Dashboard"
@@ -19,10 +20,10 @@ dashboard "cost_by_service_dashboard" {
     description = "Select an AWS service to filter resources."
     type        = "multiselect"
     query       = query.service_input
-    args        = {
+    args = {
       "line_item_usage_account_id" = self.input.account_input.value
     }
-    width       = 2
+    width = 2
   }
 
   container {
@@ -31,8 +32,8 @@ dashboard "cost_by_service_dashboard" {
       width = 2
       query = query.service_total_cost
       args = {
-        "account_id" = self.input.account_input.value
-        "line_item_product_code"     = self.input.service_input.value
+        "account_id"             = self.input.account_input.value
+        "line_item_product_code" = self.input.service_input.value
       }
     }
 
@@ -40,8 +41,8 @@ dashboard "cost_by_service_dashboard" {
       width = 2
       query = query.service_currency
       args = {
-        "account_id" = self.input.account_input.value
-        "line_item_product_code"     = self.input.service_input.value
+        "account_id"             = self.input.account_input.value
+        "line_item_product_code" = self.input.service_input.value
       }
     }
   }
@@ -54,8 +55,8 @@ dashboard "cost_by_service_dashboard" {
       width = 6
       query = query.service_monthly_cost
       args = {
-        "account_id" = self.input.account_input.value
-        "line_item_product_code"     = self.input.service_input.value
+        "account_id"             = self.input.account_input.value
+        "line_item_product_code" = self.input.service_input.value
       }
 
       legend {
@@ -69,8 +70,8 @@ dashboard "cost_by_service_dashboard" {
       width = 6
       query = query.service_top_10
       args = {
-        "account_id" = self.input.account_input.value
-        "line_item_product_code"     = self.input.service_input.value
+        "account_id"             = self.input.account_input.value
+        "line_item_product_code" = self.input.service_input.value
       }
     }
   }
@@ -82,8 +83,8 @@ dashboard "cost_by_service_dashboard" {
       width = 12
       query = query.service_cost_details
       args = {
-        "account_id" = self.input.account_input.value
-        "line_item_product_code"     = self.input.service_input.value
+        "account_id"             = self.input.account_input.value
+        "line_item_product_code" = self.input.service_input.value
       }
     }
   }
@@ -94,7 +95,7 @@ dashboard "cost_by_service_dashboard" {
 query "service_total_cost" {
   title       = "Total Service Cost"
   description = "Total unblended cost for the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
@@ -112,7 +113,7 @@ query "service_total_cost" {
 query "service_currency" {
   title       = "Currency"
   description = "Currency used for cost calculations in the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       distinct line_item_currency_code as "Currency"
     from 
@@ -130,7 +131,7 @@ query "service_currency" {
 query "service_monthly_cost" {
   title       = "Monthly Cost Trend"
   description = "Aggregated cost trend over the last 6 months for the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
       line_item_product_code,
@@ -155,7 +156,7 @@ query "service_monthly_cost" {
 query "service_top_10" {
   title       = "Top 10 Services by Cost"
   description = "List of top 10 AWS services with the highest costs for the selected account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       line_item_product_code as "Service",
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
@@ -179,7 +180,7 @@ query "service_top_10" {
 query "service_cost_details" {
   title       = "Service Cost Details"
   description = "Detailed cost breakdown per AWS service, including region and account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
@@ -204,7 +205,7 @@ query "service_cost_details" {
 query "service_accounts_input" {
   title       = "AWS Account Selection"
   description = "Multi-select input to filter the dashboard by AWS accounts."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       'All' as label,
       'all' as value
@@ -218,7 +219,7 @@ query "service_accounts_input" {
 query "service_input" {
   title       = "AWS Service Selection"
   description = "Select an AWS service for filtering resources."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select 
       'All' as label,
       'all' as value

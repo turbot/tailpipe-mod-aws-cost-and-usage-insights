@@ -1,5 +1,6 @@
 dashboard "tag_key_cost_detail_dashboard" {
-  title = "Cost by Tag Key Dashboard"
+  title         = "Cost by Tag Key Dashboard"
+  documentation = file("./dashboards/docs/tag_key_cost_detail_dashboard.md")
 
   tags = {
     type    = "Dashboard"
@@ -20,7 +21,7 @@ dashboard "tag_key_cost_detail_dashboard" {
     type        = "select"
     query       = query.tag_keys_input
     width       = 2
-    args        = {
+    args = {
       "line_item_usage_account_id" = self.input.tag_key_account.value
     }
   }
@@ -30,18 +31,18 @@ dashboard "tag_key_cost_detail_dashboard" {
     card {
       width = 2
       query = query.tag_key_total_cost
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key" = self.input.tag_key.value
+        "tag_key"                    = self.input.tag_key.value
       }
     }
 
     card {
       width = 2
       query = query.tag_key_currency
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key" = self.input.tag_key.value
+        "tag_key"                    = self.input.tag_key.value
       }
     }
   }
@@ -49,13 +50,13 @@ dashboard "tag_key_cost_detail_dashboard" {
   container {
     # Cost Trend and Key/Value Breakdown
     chart {
-      title  = "Monthly Cost by Tag Value"
-      type   = "column"
-      width  = 6
-      query  = query.monthly_cost_by_tag_value
-      args   = {
+      title = "Monthly Cost by Tag Value"
+      type  = "column"
+      width = 6
+      query = query.monthly_cost_by_tag_value
+      args = {
         "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key" = self.input.tag_key.value
+        "tag_key"                    = self.input.tag_key.value
       }
       legend {
         display = "none"
@@ -67,9 +68,9 @@ dashboard "tag_key_cost_detail_dashboard" {
       type  = "table"
       width = 6
       query = query.top_10_tag_values_by_cost
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.tag_key_account.value,
-        "tag_key" = self.input.tag_key.value
+        "tag_key"                    = self.input.tag_key.value
       }
     }
   }
@@ -80,9 +81,9 @@ dashboard "tag_key_cost_detail_dashboard" {
       title = "Cost by Tag Value and Account"
       width = 12
       query = query.tag_value_cost_breakdown
-      args  = {
+      args = {
         "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key" = self.input.tag_key.value
+        "tag_key"                    = self.input.tag_key.value
       }
     }
   }
@@ -93,7 +94,7 @@ dashboard "tag_key_cost_detail_dashboard" {
 query "tag_key_total_cost" {
   title       = "Total Cost"
   description = "Total unblended cost for the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
       -- extract distinct tag keys and their values from the json resource_tags column
       select distinct 
@@ -122,7 +123,7 @@ query "tag_key_total_cost" {
 query "tag_key_currency" {
   title       = "Currency"
   description = "Currency used for cost calculations in the selected AWS account."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
       -- extract distinct tag keys and their values from the json resource_tags column
       select distinct 
@@ -148,7 +149,7 @@ query "tag_key_currency" {
 query "monthly_cost_by_tag_value" {
   title       = "Monthly Cost by Tag Value"
   description = "Aggregated cost per month for each value of the selected tag keys."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
       -- extract distinct tag keys and their values from the json resource_tags column
       select distinct 
@@ -206,7 +207,7 @@ query "monthly_cost_by_tag_value" {
 query "top_10_tag_values_by_cost" {
   title       = "Top 10 Tag Values by Cost"
   description = "List of top 10 values for the selected tag keys with the highest cost."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
       select 
         distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -257,7 +258,7 @@ query "top_10_tag_values_by_cost" {
 query "tag_value_cost_breakdown" {
   title       = "Cost by Tag Value and Account"
   description = "Detailed cost breakdown by tag value and account for the selected tag keys."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with parsed_entries as (
       select 
         distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -320,9 +321,9 @@ query "tag_key_aws_account_input" {
 }
 
 query "tag_keys_input" {
-  title = "Tag Keys Input"
+  title       = "Tag Keys Input"
   description = "List of available tag keys in AWS cost and usage reports."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     with flattened_tags as (
       select 
         unnest(json_keys(resource_tags)) as tag_key,
