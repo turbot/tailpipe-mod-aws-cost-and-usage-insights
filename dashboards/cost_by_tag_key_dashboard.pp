@@ -8,7 +8,7 @@ dashboard "cost_by_tag_key_dashboard" {
   }
 
   input "cost_by_tag_key_dashboard_accounts" {
-    title       = "Select account(s):"
+    title       = "Select accounts:"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.cost_by_tag_key_dashboard_accounts_input
@@ -17,10 +17,11 @@ dashboard "cost_by_tag_key_dashboard" {
 
   input "cost_by_tag_key_dashboard_tag_key" {
     title       = "Select a tag key:"
-    description = "Select tag keys to analyze costs by tag values."
+    description = "Select a tag key to analyze costs by tag values."
     type        = "select"
-    query       = query.cost_by_tag_key_dashboard_tag_keys_input
+    query       = query.cost_by_tag_key_dashboard_tag_key_input
     width       = 2
+
     args = {
       "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
     }
@@ -31,6 +32,9 @@ dashboard "cost_by_tag_key_dashboard" {
     card {
       width = 4
       query = query.cost_by_tag_key_dashboard_total_cost
+      icon  = "attach_money"
+      type  = "info"
+
       args = {
         "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
         "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
@@ -308,24 +312,20 @@ query "cost_by_tag_key_dashboard_accounts_input" {
   }
 }
 
-query "cost_by_tag_key_dashboard_tag_keys_input" {
+query "cost_by_tag_key_dashboard_tag_key_input" {
   sql = <<-EOQ
-    select
-      'All' as label,
-      'all' as value
-    union all
     select distinct
-      t.tag_key as label, 
+      t.tag_key as label,
       t.tag_key as value
-    from 
+    from
       aws_cost_and_usage_report,
       unnest(json_keys(resource_tags)) as t(tag_key)
-    where 
-      ('all' in ($1) or line_item_usage_account_id in $1)
-      and resource_tags is not null 
+    where
+      line_item_usage_account_id in $1
+      and resource_tags is not null
       and t.tag_key <> ''
       and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
-    order by 
+    order by
       label;
   EOQ
 

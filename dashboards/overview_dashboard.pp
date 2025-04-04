@@ -1,6 +1,6 @@
-dashboard "cost_and_usage_overview_dashboard" {
+dashboard "overview_dashboard" {
   title         = "Cost and Usage Overview Dashboard"
-  documentation = file("./dashboards/docs/cost_and_usage_overview_dashboard.md")
+  documentation = file("./dashboards/docs/overview_dashboard.md")
 
   tags = {
     type    = "Dashboard"
@@ -9,12 +9,12 @@ dashboard "cost_and_usage_overview_dashboard" {
 
   container {
     # Multi-select Account Input
-    input "cost_and_usage_overview_dashboard_accounts" {
+    input "overview_dashboard_accounts" {
       title       = "Select account(s):"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
-      query       = query.cost_and_usage_overview_dashboard_accounts_input
+      query       = query.overview_dashboard_accounts_input
     }
   }
 
@@ -22,11 +22,12 @@ dashboard "cost_and_usage_overview_dashboard" {
     # Summary Metrics
     card {
       width = 2
-      query = query.cost_and_usage_overview_dashboard_total_cost
+      query = query.overview_dashboard_total_cost
       icon  = "attach_money"
       type  = "info"
+
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
   }
@@ -37,9 +38,9 @@ dashboard "cost_and_usage_overview_dashboard" {
       title = "Monthly Cost Trend"
       type  = "column"
       width = 6
-      query = query.cost_and_usage_overview_dashboard_monthly_cost
+      query = query.overview_dashboard_monthly_cost
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
 
       legend {
@@ -51,9 +52,9 @@ dashboard "cost_and_usage_overview_dashboard" {
       title = "Daily Cost Trend"
       type  = "column"
       width = 6
-      query = query.cost_and_usage_overview_dashboard_daily_cost
+      query = query.overview_dashboard_daily_cost
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
 
       legend {
@@ -68,9 +69,9 @@ dashboard "cost_and_usage_overview_dashboard" {
       title = "Top 10 Accounts"
       type  = "table"
       width = 6
-      query = query.cost_and_usage_overview_dashboard_top_10_accounts
+      query = query.overview_dashboard_top_10_accounts
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -78,9 +79,9 @@ dashboard "cost_and_usage_overview_dashboard" {
       title = "Top 10 Regions"
       type  = "table"
       width = 6
-      query = query.cost_and_usage_overview_dashboard_top_10_regions
+      query = query.overview_dashboard_top_10_regions
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -88,9 +89,9 @@ dashboard "cost_and_usage_overview_dashboard" {
       title = "Top 10 Services"
       type  = "table"
       width = 6
-      query = query.cost_and_usage_overview_dashboard_top_10_services
+      query = query.overview_dashboard_top_10_services
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -98,9 +99,9 @@ dashboard "cost_and_usage_overview_dashboard" {
       title = "Top 10 Resources"
       type  = "table"
       width = 6
-      query = query.cost_and_usage_overview_dashboard_top_10_resources
+      query = query.overview_dashboard_top_10_resources
       args = {
-        "line_item_usage_account_ids" = self.input.cost_and_usage_overview_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
   }
@@ -108,7 +109,7 @@ dashboard "cost_and_usage_overview_dashboard" {
 
 # Queries
 
-query "cost_and_usage_overview_dashboard_total_cost" {
+query "overview_dashboard_total_cost" {
   sql = <<-EOQ
     select
       'Total Cost (' || line_item_currency_code || ')' as label,
@@ -126,7 +127,7 @@ query "cost_and_usage_overview_dashboard_total_cost" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_monthly_cost" {
+query "overview_dashboard_monthly_cost" {
   sql = <<-EOQ
     select
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
@@ -150,7 +151,7 @@ query "cost_and_usage_overview_dashboard_monthly_cost" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_daily_cost" {
+query "overview_dashboard_daily_cost" {
   sql = <<-EOQ
     select
       strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
@@ -175,7 +176,7 @@ query "cost_and_usage_overview_dashboard_daily_cost" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_top_10_accounts" {
+query "overview_dashboard_top_10_accounts" {
   sql = <<-EOQ
     select
       line_item_usage_account_id as "Account",
@@ -197,7 +198,7 @@ query "cost_and_usage_overview_dashboard_top_10_accounts" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_top_10_regions" {
+query "overview_dashboard_top_10_regions" {
   sql = <<-EOQ
     select
       coalesce(product_region_code, 'global') as "Region",
@@ -219,11 +220,11 @@ query "cost_and_usage_overview_dashboard_top_10_regions" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_top_10_services" {
+query "overview_dashboard_top_10_services" {
   sql = <<-EOQ
     select
       product_service_code as "Service",
-      format('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
@@ -240,7 +241,7 @@ query "cost_and_usage_overview_dashboard_top_10_services" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_top_10_resources" {
+query "overview_dashboard_top_10_resources" {
   sql = <<-EOQ
     select
       line_item_resource_id as "Resource",
@@ -266,7 +267,7 @@ query "cost_and_usage_overview_dashboard_top_10_resources" {
   }
 }
 
-query "cost_and_usage_overview_dashboard_accounts_input" {
+query "overview_dashboard_accounts_input" {
   sql = <<-EOQ
     select
       'All' as label,

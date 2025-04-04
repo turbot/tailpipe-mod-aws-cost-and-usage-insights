@@ -1,16 +1,16 @@
-# AWS Cost and Usage Report Insights Mod
+# AWS Cost and Usage Insights Mod
 
 [Tailpipe](https://tailpipe.io) is an open-source CLI tool that allows you to collect logs and query them with SQL.
 
 [AWS](https://aws.amazon.com/) provides on-demand cloud computing platforms and APIs to authenticated customers on a metered pay-as-you-go basis.
 
-The [AWS Cost and Usage Report Insights Mod](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-usage-report-insights) contains pre-built dashboards which can be used to monitor and analyze costs across your AWS accounts.
+The [AWS Cost and Usage Insights Mod](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-and-usage-insights) contains pre-built dashboards which can be used to monitor and analyze costs across your AWS accounts.
 
-<img src="https://raw.githubusercontent.com/turbot/tailpipe-mod-aws-cost-usage-report-insights/main/docs/images/aws_cost_usage_dashboard.png" width="50%" type="thumbnail"/>
+<img src="https://raw.githubusercontent.com/turbot/tailpipe-mod-aws-cost-and-usage-insights/main/docs/images/aws_cost_and_usage_overview_dashboard.png" width="50%" type="thumbnail"/>
 
 ## Documentation
 
-- **[Dashboards →](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-usage-report-insights/dashboards)**
+- **[Dashboards →](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-and-usage-insights/dashboards)**
 
 ## Getting Started
 
@@ -35,7 +35,7 @@ Install the mod:
 ```sh
 mkdir dashboards
 cd dashboards
-powerpipe mod install github.com/turbot/tailpipe-mod-aws-cost-usage-report-insights
+powerpipe mod install github.com/turbot/tailpipe-mod-aws-cost-and-usage-insights
 ```
 
 ### Browsing Dashboards

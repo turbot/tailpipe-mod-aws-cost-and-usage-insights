@@ -10,7 +10,7 @@ dashboard "cost_by_account_dashboard" {
   container {
     # Multi-select Account Input
     input "cost_by_account_dashboard_accounts" {
-      title       = "Select account(s):"
+      title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -23,6 +23,9 @@ dashboard "cost_by_account_dashboard" {
     card {
       width = 4
       query = query.cost_by_account_dashboard_total_cost
+      icon  = "attach_money"
+      type  = "info"
+
       args = {
         "line_item_usage_account_ids" = self.input.cost_by_account_dashboard_accounts.value
       }
@@ -78,8 +81,8 @@ dashboard "cost_by_account_dashboard" {
 query "cost_by_account_dashboard_total_cost" {
   sql = <<-EOQ
     select 
-      'Total Cost' as metric,
-      concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
+      'Total Cost (' || line_item_currency_code || ')' as label,
+      round(sum(line_item_unblended_cost), 2) as value
     from 
       aws_cost_and_usage_report
     where
