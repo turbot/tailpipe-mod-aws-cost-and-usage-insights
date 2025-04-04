@@ -4,7 +4,7 @@ dashboard "cost_by_region_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   container {
@@ -16,23 +16,28 @@ dashboard "cost_by_region_dashboard" {
       width       = 2
       query       = query.region_accounts_input
     }
-  }
 
-  container {
-    # Summary Cards
-    card {
-      width = 2
-      query = query.region_total_cost
+    # Multi-select Region Input
+    input "regions_input" {
+      title       = "Select regions:"
+      description = "Choose one or more AWS regions to analyze."
+      type        = "multiselect"
+      width       = 2
+      query       = query.regions_input
       args = {
         "line_item_usage_account_ids" = self.input.region_accounts_input.value
       }
     }
+  }
 
+  container {
+    # Combined card showing Total Cost with Currency
     card {
-      width = 2
-      query = query.region_currency
+      width = 4
+      query = query.region_total_cost_with_currency
       args = {
-        "line_item_usage_account_ids" = self.input.region_accounts_input.value
+        "line_item_usage_account_ids" = self.input.region_accounts_input.value,
+        "product_region_codes"        = self.input.regions_input.value
       }
     }
   }
@@ -45,10 +50,11 @@ dashboard "cost_by_region_dashboard" {
       width = 6
       query = query.region_monthly_cost
       args = {
-        "line_item_usage_account_ids" = self.input.region_accounts_input.value
+        "line_item_usage_account_ids" = self.input.region_accounts_input.value,
+        "product_region_codes"        = self.input.regions_input.value
       }
       legend {
-        display  = "none"
+        display = "none"
       }
     }
 
@@ -58,7 +64,8 @@ dashboard "cost_by_region_dashboard" {
       width = 6
       query = query.region_top_10
       args = {
-        "line_item_usage_account_ids" = self.input.region_accounts_input.value
+        "line_item_usage_account_ids" = self.input.region_accounts_input.value,
+        "product_region_codes"        = self.input.regions_input.value
       }
     }
   }
@@ -70,7 +77,8 @@ dashboard "cost_by_region_dashboard" {
       width = 12
       query = query.region_cost_details
       args = {
-        "line_item_usage_account_ids" = self.input.region_accounts_input.value
+        "line_item_usage_account_ids" = self.input.region_accounts_input.value,
+        "product_region_codes"        = self.input.regions_input.value
       }
     }
   }
@@ -78,37 +86,25 @@ dashboard "cost_by_region_dashboard" {
 
 # Query Definitions
 
-query "region_total_cost" {
-  title       = "Total Region Cost"
-  description = "Total unblended cost across all AWS regions."
+query "region_total_cost_with_currency" {
+  title       = "Total Cost"
+  description = "Total unblended cost across all AWS regions with currency."
   sql         = <<-EOQ
     select 
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
-      aws_cost_and_usage_report
-    where 
-      ('all' in ($1) or line_item_usage_account_id in $1);
-  EOQ
-
-  param "line_item_usage_account_ids" {}
-}
-
-
-query "region_currency" {
-  title       = "Currency"
-  description = "Currency used for cost calculations in AWS accounts."
-  sql         = <<-EOQ
-    select 
-      distinct line_item_currency_code as "Currency"
+      'Total Cost' as metric,
+      concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
     from 
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
+      and ('all' in ($2) or coalesce(product_region_code, 'global') in $2)
+    group by
+      line_item_currency_code
     limit 1;
   EOQ
 
   param "line_item_usage_account_ids" {}
+  param "product_region_codes" {}
 }
 
 query "region_monthly_cost" {
@@ -117,21 +113,23 @@ query "region_monthly_cost" {
   sql         = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
-      product_region_code,
+      coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
       line_item_usage_start_date >= current_date - interval '6' month
       and ('all' in ($1) or line_item_usage_account_id in $1)
+      and ('all' in ($2) or coalesce(product_region_code, 'global') in $2)
     group by 
       date_trunc('month', line_item_usage_start_date),
-      product_region_code
+      coalesce(product_region_code, 'global')
     order by 
       date_trunc('month', line_item_usage_start_date);
   EOQ
 
   param "line_item_usage_account_ids" {}
+  param "product_region_codes" {}
 }
 
 query "region_top_10" {
@@ -140,12 +138,12 @@ query "region_top_10" {
   sql         = <<-EOQ
     select 
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
+      and ('all' in ($2) or coalesce(product_region_code, 'global') in $2)
     group by 
       coalesce(product_region_code, 'global')
     order by 
@@ -154,6 +152,7 @@ query "region_top_10" {
   EOQ
 
   param "line_item_usage_account_ids" {}
+  param "product_region_codes" {}
 }
 
 query "region_cost_details" {
@@ -163,12 +162,12 @@ query "region_cost_details" {
     select 
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Cost"
       round(sum(line_item_unblended_cost), 2) as "Cost"
     from 
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
+      and ('all' in ($2) or coalesce(product_region_code, 'global') in $2)
     group by 
       coalesce(product_region_code, 'global'),
       line_item_usage_account_id
@@ -177,8 +176,8 @@ query "region_cost_details" {
   EOQ
 
   param "line_item_usage_account_ids" {}
+  param "product_region_codes" {}
 }
-
 
 query "region_accounts_input" {
   title       = "AWS Account Selection"
@@ -192,4 +191,28 @@ query "region_accounts_input" {
       line_item_usage_account_id as value
     from aws_cost_and_usage_report;
   EOQ
+}
+
+query "regions_input" {
+  title       = "AWS Region Selection"
+  description = "Multi-select input to filter the dashboard by AWS regions."
+  sql         = <<-EOQ
+    select
+      'All' as label,
+      'all' as value
+    union all
+    select 
+      coalesce(product_region_code, 'global') as label,
+      coalesce(product_region_code, 'global') as value
+    from 
+      aws_cost_and_usage_report
+    where 
+      ('all' in ($1) or line_item_usage_account_id in $1)
+    group by 
+      coalesce(product_region_code, 'global')
+    order by 
+      label;
+  EOQ
+
+  param "line_item_usage_account_ids" {}
 }

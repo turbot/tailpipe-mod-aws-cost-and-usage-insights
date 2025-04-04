@@ -1,10 +1,10 @@
-dashboard "tag_key_cost_detail_dashboard" {
+dashboard "cost_by_tag_key_dashboard" {
   title         = "Cost by Tag Key Dashboard"
-  documentation = file("./dashboards/docs/tag_key_cost_detail_dashboard.md")
+  documentation = file("./dashboards/docs/cost_by_tag_key_dashboard.md")
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   input "tag_key_account" {
@@ -27,19 +27,10 @@ dashboard "tag_key_cost_detail_dashboard" {
   }
 
   container {
-    # Summary Metrics
+    # Combined card showing Total Cost with Currency
     card {
-      width = 2
-      query = query.tag_key_total_cost
-      args = {
-        "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key"                    = self.input.tag_key.value
-      }
-    }
-
-    card {
-      width = 2
-      query = query.tag_key_currency
+      width = 4
+      query = query.tag_key_total_cost_with_currency
       args = {
         "line_item_usage_account_id" = self.input.tag_key_account.value
         "tag_key"                    = self.input.tag_key.value
@@ -91,20 +82,21 @@ dashboard "tag_key_cost_detail_dashboard" {
 
 # Query Definitions
 
-query "tag_key_total_cost" {
+query "tag_key_total_cost_with_currency" {
   title       = "Total Cost"
-  description = "Total unblended cost for the selected AWS account."
+  description = "Total unblended cost for the selected AWS account with currency."
   sql         = <<-EOQ
     with parsed_entries as (
       -- extract distinct tag keys and their values from the json resource_tags column
-      select distinct 
+      select
         t.tag_key,
         json_extract(resource_tags, '$.' || t.tag_key) as tag_value,
         line_item_usage_start_date,
         line_item_usage_account_id,
-        line_item_unblended_cost
+        line_item_unblended_cost,
+        line_item_currency_code
       from aws_cost_and_usage_report,
-      lateral unnest(json_keys(resource_tags)) as t(tag_key) -- correct unnest usage
+      lateral unnest(json_keys(resource_tags)) as t(tag_key)
       where 
         resource_tags is not null
         and ('all' in ($1) or line_item_usage_account_id in $1)
@@ -112,34 +104,10 @@ query "tag_key_total_cost" {
         and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
     )
     select 
-        round(sum(line_item_unblended_cost), 2) as "total cost"
-    from parsed_entries;
-  EOQ
-
-  param "line_item_usage_account_id" {}
-  param "tag_key" {}
-}
-
-query "tag_key_currency" {
-  title       = "Currency"
-  description = "Currency used for cost calculations in the selected AWS account."
-  sql         = <<-EOQ
-    with parsed_entries as (
-      -- extract distinct tag keys and their values from the json resource_tags column
-      select distinct 
-        t.tag_key,
-        json_extract(resource_tags, '$.' || t.tag_key) as tag_value,
-        line_item_currency_code
-      from aws_cost_and_usage_report,
-      unnest(json_keys(resource_tags)) as t(tag_key)
-      where resource_tags is not null
-        and ('all' in ($1) or line_item_usage_account_id in $1)
-        and t.tag_key in $2
-    )
-    select 
-        distinct line_item_currency_code as "currency"
-    from parsed_entries
-    limit 1;
+      'Total Cost' as metric,
+      concat(round(sum(line_item_unblended_cost), 2), ' ', max(line_item_currency_code)) as value
+    from 
+      parsed_entries;
   EOQ
 
   param "line_item_usage_account_id" {}
@@ -243,7 +211,6 @@ query "top_10_tag_values_by_cost" {
     )
     select 
       replace(tag_with_value, '"', '') as "Tag Value",
-      --format('{:.2f}', round(cost, 2)) as "Total Cost"
       round(cost, 2) as "Total Cost"
     from 
       tag_costs
@@ -289,7 +256,6 @@ query "tag_value_cost_breakdown" {
       replace(tag_value, '"', '') as "Tag Value",
       line_item_usage_account_id as "Account ID",
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}',round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       filtered_entries

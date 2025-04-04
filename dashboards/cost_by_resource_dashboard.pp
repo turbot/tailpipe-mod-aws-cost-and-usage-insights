@@ -4,7 +4,7 @@ dashboard "cost_by_resource_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   input "account" {
@@ -27,19 +27,10 @@ dashboard "cost_by_resource_dashboard" {
   }
 
   container {
-    # Summary Metrics
+    # Combined card showing Total Cost with Currency
     card {
-      width = 2
-      query = query.total_resource_cost
-      args = {
-        "line_item_usage_account_id" = self.input.account.value,
-        "line_item_product_code"     = self.input.service.value
-      }
-    }
-
-    card {
-      width = 2
-      query = query.resource_currency
+      width = 4
+      query = query.total_resource_cost_with_currency
       args = {
         "line_item_usage_account_id" = self.input.account.value,
         "line_item_product_code"     = self.input.service.value
@@ -92,35 +83,20 @@ dashboard "cost_by_resource_dashboard" {
 
 # Query Definitions
 
-query "total_resource_cost" {
-  title       = "Total Resource Cost"
-  description = "Total cost for all resources in the selected AWS account and service."
+query "total_resource_cost_with_currency" {
+  title       = "Total Cost"
+  description = "Total cost for all resources in the selected AWS account and service with currency."
   sql         = <<-EOQ
     select 
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
-      aws_cost_and_usage_report
-    where 
-      ('all' in ($1) or line_item_usage_account_id in $1)
-      and ('all' in ($2) or line_item_product_code in $2);
-  EOQ
-
-  param "line_item_usage_account_id" {}
-  param "line_item_product_code" {}
-}
-
-query "resource_currency" {
-  title       = "Currency"
-  description = "Currency used for cost calculations in the selected AWS account."
-  sql         = <<-EOQ
-    select 
-      distinct line_item_currency_code as "Currency"
+      'Total Cost' as metric,
+      concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
     from 
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
       and ('all' in ($2) or line_item_product_code in $2)
+    group by
+      line_item_currency_code
     limit 1;
   EOQ
 
@@ -161,7 +137,6 @@ query "top_resources_by_cost" {
       line_item_resource_id as "Resource",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -191,7 +166,6 @@ query "resource_cost_breakdown" {
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report

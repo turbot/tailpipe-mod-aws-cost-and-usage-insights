@@ -1,10 +1,10 @@
-dashboard "tag_cost_detail_dashboard" {
+dashboard "cost_by_tag_dashboard" {
   title         = "Cost by Tag Dashboard"
-  documentation = file("./dashboards/docs/tag_cost_detail_dashboard.md")
+  documentation = file("./dashboards/docs/cost_by_tag_dashboard.md")
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   input "account" {
@@ -16,18 +16,10 @@ dashboard "tag_cost_detail_dashboard" {
   }
 
   container {
-    # Summary Metrics
+    # Combined card showing Total Cost with Currency
     card {
-      width = 2
-      query = query.tag_total_cost
-      args = {
-        "line_item_usage_account_id" = self.input.account.value
-      }
-    }
-
-    card {
-      width = 2
-      query = query.tag_currency
+      width = 4
+      query = query.tag_total_cost_with_currency
       args = {
         "line_item_usage_account_id" = self.input.account.value
       }
@@ -92,31 +84,19 @@ dashboard "tag_cost_detail_dashboard" {
 
 # Query Definitions
 
-query "tag_total_cost" {
+query "tag_total_cost_with_currency" {
   title       = "Total Cost"
-  description = "Total unblended cost for the selected AWS account."
+  description = "Total unblended cost for the selected AWS account with currency."
   sql         = <<-EOQ
     select 
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
-      aws_cost_and_usage_report
-    where 
-      ('all' in ($1) or line_item_usage_account_id in $1);
-  EOQ
-
-  param "line_item_usage_account_id" {}
-}
-
-query "tag_currency" {
-  title       = "Currency"
-  description = "Currency used for cost calculations in the selected AWS account."
-  sql         = <<-EOQ
-    select 
-      distinct line_item_currency_code as "Currency"
+      'Total Cost' as metric,
+      concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
     from 
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
+    group by
+      line_item_currency_code
     limit 1;
   EOQ
 
@@ -219,7 +199,6 @@ query "top_10_tags_by_cost" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      --format('{:.2f}', round(cost, 2)) as "Total Cost"
       round(cost, 2) as "Total Cost"
     from 
       tag_costs
@@ -268,7 +247,6 @@ query "tagged_resource_cost_breakdown" {
       concat(tag_key, ': ', tag_value) as "Tag",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       formatted_entries
@@ -363,7 +341,6 @@ query "untagged_resource_cost_breakdown" {
         else
           coalesce(product_region_code, 'global')
       end as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       combined_resources

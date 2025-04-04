@@ -1,10 +1,10 @@
-dashboard "cost_usage_dashboard" {
+dashboard "cost_and_usage_dashboard" {
   title         = "Cost and Usage Dashboard"
-  documentation = file("./dashboards/docs/cost_usage_dashboard.md")
+  documentation = file("./dashboards/docs/cost_and_usage_dashboard.md")
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   container {
@@ -25,7 +25,7 @@ dashboard "cost_usage_dashboard" {
       query = query.total_cost
       icon  = "attach_money"
       type  = "info"
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
     }
@@ -38,7 +38,7 @@ dashboard "cost_usage_dashboard" {
       type  = "column"
       width = 6
       query = query.monthly_cost
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
 
@@ -52,7 +52,7 @@ dashboard "cost_usage_dashboard" {
       type  = "column"
       width = 6
       query = query.daily_cost
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
 
@@ -69,7 +69,7 @@ dashboard "cost_usage_dashboard" {
       type  = "table"
       width = 6
       query = query.top_accounts
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
     }
@@ -79,7 +79,7 @@ dashboard "cost_usage_dashboard" {
       type  = "table"
       width = 6
       query = query.top_regions
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
     }
@@ -89,7 +89,7 @@ dashboard "cost_usage_dashboard" {
       type  = "table"
       width = 6
       query = query.top_services
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
     }
@@ -100,7 +100,7 @@ dashboard "cost_usage_dashboard" {
       type  = "table"
       width = 6
       query = query.top_resources
-      args  = {
+      args = {
         "line_item_usage_account_ids" = self.input.accounts.value
       }
     }
@@ -112,7 +112,7 @@ dashboard "cost_usage_dashboard" {
 query "total_cost" {
   title       = "Total Cost"
   description = "Total unblended cost for selected AWS accounts."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       'Total Cost (' || line_item_currency_code || ')' as label,
@@ -130,7 +130,7 @@ query "total_cost" {
 query "monthly_cost" {
   title       = "Monthly Cost Trend"
   description = "Cost trend over the past 6 months."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
       line_item_usage_account_id as "Account Id",
@@ -153,7 +153,7 @@ query "monthly_cost" {
 query "daily_cost" {
   title       = "Daily Cost Trend"
   description = "Aggregated cost trend over the last 30 days across AWS accounts, grouped by account ID."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
       line_item_usage_account_id as "Account",
@@ -177,7 +177,7 @@ query "daily_cost" {
 query "top_accounts" {
   title       = "Top 10 Accounts"
   description = "List of top 10 AWS accounts with the highest costs."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       line_item_usage_account_id as "Account",
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
@@ -199,7 +199,7 @@ query "top_accounts" {
 query "top_regions" {
   title       = "Top 10 Regions"
   description = "List of top 10 AWS regions with the highest costs."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       coalesce(product_region_code, 'global') as "Region",
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
@@ -221,17 +221,18 @@ query "top_regions" {
 query "top_services" {
   title       = "Top 10 Services"
   description = "List of top 10 AWS services with the highest costs."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       product_service_code as "Service",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
-    group by 1
-    order by 2 desc
+    group by
+      product_service_code
+    order by
+      sum(line_item_unblended_cost) desc
     limit 10;
   EOQ
   param "line_item_usage_account_ids" {}
@@ -240,20 +241,23 @@ query "top_services" {
 query "top_resources" {
   title       = "Top 10 Resources"
   description = "List of top 10 AWS resources with the highest costs."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       line_item_resource_id as "Resource",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      format('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
       ('all' in ($1)  or line_item_usage_account_id in $1)
       and line_item_resource_id is not null
-    group by 1, 2, 3
-    order by "Total Cost" desc
+    group by
+      line_item_resource_id,
+      line_item_usage_account_id,
+      coalesce(product_region_code, 'global')
+    order by
+      sum(line_item_unblended_cost) desc
     limit 10;
   EOQ
   param "line_item_usage_account_ids" {}
@@ -262,7 +266,7 @@ query "top_resources" {
 query "aws_accounts_input" {
   title       = "AWS Account Selection"
   description = "Multi-select input to filter the dashboard by AWS accounts."
-  sql = <<-EOQ
+  sql         = <<-EOQ
     select
       'All' as label,
       'all' as value

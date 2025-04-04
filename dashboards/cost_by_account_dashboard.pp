@@ -4,7 +4,7 @@ dashboard "cost_by_account_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   container {
@@ -19,18 +19,10 @@ dashboard "cost_by_account_dashboard" {
   }
 
   container {
-    # Summary Cards
+    # Combined card showing Total Cost with Currency
     card {
-      width = 2
-      query = query.account_total_cost
-      args = {
-        "line_item_usage_account_ids" = self.input.accounts_input.value
-      }
-    }
-
-    card {
-      width = 2
-      query = query.account_currency
+      width = 4
+      query = query.account_total_cost_with_currency
       args = {
         "line_item_usage_account_ids" = self.input.accounts_input.value
       }
@@ -85,31 +77,19 @@ dashboard "cost_by_account_dashboard" {
 
 # Query Definitions
 
-query "account_total_cost" {
+query "account_total_cost_with_currency" {
   title       = "Total Cost"
-  description = "Aggregated total cost across all AWS accounts."
+  description = "Aggregated total cost across all AWS accounts with currency."
   sql         = <<-EOQ
     select 
-      format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
+      'Total Cost' as metric,
+      concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
     from 
       aws_cost_and_usage_report
     where
-      ('all' in ($1) or line_item_usage_account_id in $1);
-  EOQ
-
-  param "line_item_usage_account_ids" {}
-}
-
-query "account_currency" {
-  title       = "Currency"
-  description = "Currency used for cost calculations in AWS accounts."
-  sql         = <<-EOQ
-    select 
-      distinct line_item_currency_code as "Currency"
-    from 
-      aws_cost_and_usage_report
-    where 
       ('all' in ($1) or line_item_usage_account_id in $1)
+    group by
+      line_item_currency_code
     limit 1;
   EOQ
 
@@ -169,7 +149,7 @@ query "account_cost_details" {
     select 
       line_item_usage_account_id as "Account",
       --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost",
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where

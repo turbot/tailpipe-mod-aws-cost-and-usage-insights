@@ -4,7 +4,7 @@ dashboard "cost_by_service_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/Billing"
+    service = "AWS/CostAndUsageReport"
   }
 
   input "account_input" {
@@ -27,19 +27,10 @@ dashboard "cost_by_service_dashboard" {
   }
 
   container {
-    # Summary Cards
+    # Combined card showing Total Cost with Currency
     card {
-      width = 2
-      query = query.service_total_cost
-      args = {
-        "account_id"             = self.input.account_input.value
-        "line_item_product_code" = self.input.service_input.value
-      }
-    }
-
-    card {
-      width = 2
-      query = query.service_currency
+      width = 4
+      query = query.service_total_cost_with_currency
       args = {
         "account_id"             = self.input.account_input.value
         "line_item_product_code" = self.input.service_input.value
@@ -60,7 +51,7 @@ dashboard "cost_by_service_dashboard" {
       }
 
       legend {
-        display  = "none"
+        display = "none"
       }
     }
 
@@ -92,35 +83,20 @@ dashboard "cost_by_service_dashboard" {
 
 # Query Definitions
 
-query "service_total_cost" {
-  title       = "Total Service Cost"
-  description = "Total unblended cost for the selected AWS account."
+query "service_total_cost_with_currency" {
+  title       = "Total Cost"
+  description = "Total unblended cost for the selected AWS account with currency."
   sql         = <<-EOQ
     select 
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from 
-      aws_cost_and_usage_report
-    where 
-      ('all' in ($1) or line_item_usage_account_id in $1)
-      and ('all' in ($2) or line_item_product_code in $2);
-  EOQ
-
-  param "account_id" {}
-  param "line_item_product_code" {}
-}
-
-query "service_currency" {
-  title       = "Currency"
-  description = "Currency used for cost calculations in the selected AWS account."
-  sql         = <<-EOQ
-    select 
-      distinct line_item_currency_code as "Currency"
+      'Total Cost' as metric,
+      concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
     from 
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
       and ('all' in ($2) or line_item_product_code in $2)
+    group by
+      line_item_currency_code
     limit 1;
   EOQ
 
@@ -159,7 +135,6 @@ query "service_top_10" {
   sql         = <<-EOQ
     select 
       line_item_product_code as "Service",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -184,7 +159,6 @@ query "service_cost_details" {
     select 
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
