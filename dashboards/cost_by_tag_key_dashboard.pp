@@ -7,22 +7,22 @@ dashboard "cost_by_tag_key_dashboard" {
     service = "AWS/CostAndUsageReport"
   }
 
-  input "tag_key_account" {
-    title       = "Select accounts:"
+  input "cost_by_tag_key_dashboard_accounts" {
+    title       = "Select account(s):"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
-    query       = query.tag_key_aws_account_input
+    query       = query.cost_by_tag_key_dashboard_accounts_input
     width       = 2
   }
 
-  input "tag_key" {
+  input "cost_by_tag_key_dashboard_tag_key" {
     title       = "Select a tag key:"
     description = "Select tag keys to analyze costs by tag values."
     type        = "select"
-    query       = query.tag_keys_input
+    query       = query.cost_by_tag_key_dashboard_tag_keys_input
     width       = 2
     args = {
-      "line_item_usage_account_id" = self.input.tag_key_account.value
+      "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
     }
   }
 
@@ -30,10 +30,10 @@ dashboard "cost_by_tag_key_dashboard" {
     # Combined card showing Total Cost with Currency
     card {
       width = 4
-      query = query.tag_key_total_cost_with_currency
+      query = query.cost_by_tag_key_dashboard_total_cost
       args = {
-        "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key"                    = self.input.tag_key.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
     }
   }
@@ -44,10 +44,10 @@ dashboard "cost_by_tag_key_dashboard" {
       title = "Monthly Cost by Tag Value"
       type  = "column"
       width = 6
-      query = query.monthly_cost_by_tag_value
+      query = query.cost_by_tag_key_dashboard_monthly_cost
       args = {
-        "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key"                    = self.input.tag_key.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
       legend {
         display = "none"
@@ -58,10 +58,10 @@ dashboard "cost_by_tag_key_dashboard" {
       title = "Top 10 Tag Values by Cost"
       type  = "table"
       width = 6
-      query = query.top_10_tag_values_by_cost
+      query = query.cost_by_tag_key_dashboard_top_10_tag_values
       args = {
-        "line_item_usage_account_id" = self.input.tag_key_account.value,
-        "tag_key"                    = self.input.tag_key.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value,
+        "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
     }
   }
@@ -71,10 +71,10 @@ dashboard "cost_by_tag_key_dashboard" {
     table {
       title = "Cost by Tag Value and Account"
       width = 12
-      query = query.tag_value_cost_breakdown
+      query = query.cost_by_tag_key_dashboard_tag_value_costs
       args = {
-        "line_item_usage_account_id" = self.input.tag_key_account.value
-        "tag_key"                    = self.input.tag_key.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
     }
   }
@@ -82,45 +82,45 @@ dashboard "cost_by_tag_key_dashboard" {
 
 # Query Definitions
 
-query "tag_key_total_cost_with_currency" {
-  title       = "Total Cost"
-  description = "Total unblended cost for the selected AWS account with currency."
-  sql         = <<-EOQ
+query "cost_by_tag_key_dashboard_total_cost" {
+  sql = <<-EOQ
     with parsed_entries as (
-      -- extract distinct tag keys and their values from the json resource_tags column
       select
-        t.tag_key,
-        json_extract(resource_tags, '$.' || t.tag_key) as tag_value,
-        line_item_usage_start_date,
-        line_item_usage_account_id,
+        unnest(json_keys(resource_tags)) as tag_key,
         line_item_unblended_cost,
         line_item_currency_code
-      from aws_cost_and_usage_report,
-      lateral unnest(json_keys(resource_tags)) as t(tag_key)
+      from aws_cost_and_usage_report
       where 
         resource_tags is not null
         and ('all' in ($1) or line_item_usage_account_id in $1)
-        and ('all' in ($2) or t.tag_key in $2)
-        and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
+    ),
+    filtered_entries as (
+      select
+        sum(line_item_unblended_cost) as cost,
+        max(line_item_currency_code) as currency
+      from
+        parsed_entries
+      where
+        $2 = 'all' or tag_key = $2
     )
     select 
       'Total Cost' as metric,
-      concat(round(sum(line_item_unblended_cost), 2), ' ', max(line_item_currency_code)) as value
+      concat(round(cost, 2), ' ', currency) as value
     from 
-      parsed_entries;
+      filtered_entries;
   EOQ
 
   param "line_item_usage_account_id" {}
   param "tag_key" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "monthly_cost_by_tag_value" {
-  title       = "Monthly Cost by Tag Value"
-  description = "Aggregated cost per month for each value of the selected tag keys."
-  sql         = <<-EOQ
+query "cost_by_tag_key_dashboard_monthly_cost" {
+  sql = <<-EOQ
     with parsed_entries as (
-      -- extract distinct tag keys and their values from the json resource_tags column
-      select distinct 
+      select
         unnest(json_keys(resource_tags)) as tag_key,
         json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
         line_item_usage_start_date,
@@ -130,37 +130,38 @@ query "monthly_cost_by_tag_value" {
         aws_cost_and_usage_report
       where 
         resource_tags is not null
+        and ('all' in ($1) or line_item_usage_account_id in $1)
     ),
     filtered_entries as (
-        -- apply filtering based on account and tag key
-        select
-          tag_key,
-          tag_value,
-          line_item_usage_start_date,
-          line_item_unblended_cost
-        from 
-          parsed_entries
-        where 
-          ('all' in ($1) or line_item_usage_account_id in $1)
-          and tag_key in $2
-          and tag_value <> '""'
+      select
+        tag_key,
+        tag_value,
+        line_item_usage_start_date,
+        line_item_unblended_cost
+      from 
+        parsed_entries
+      where 
+        ($2 = 'all' or tag_key = $2)
+        and tag_value <> '""'
     ),
     tag_costs as (
-        -- aggregate cost by month and tag_value
-        select 
-          date_trunc('month', line_item_usage_start_date) as month,
-          tag_value,
-          sum(line_item_unblended_cost) as cost
-        from 
-          filtered_entries
-        group by 
-          date_trunc('month', line_item_usage_start_date),
-          tag_value
+      select 
+        date_trunc('month', line_item_usage_start_date) as month,
+        case 
+          when $2 = 'all' then concat(tag_key, ': ', replace(tag_value, '"', ''))
+          else replace(tag_value, '"', '')
+        end as series,
+        sum(line_item_unblended_cost) as cost
+      from 
+        filtered_entries
+      group by 
+        date_trunc('month', line_item_usage_start_date),
+        series
     )
     select 
-      strftime(month, '%b %Y') as "month",
-      replace(tag_value, '"', '') as "series",
-      round(cost, 2) as "total cost"
+      strftime(month, '%b %Y') as "Month",
+      series as "Series",
+      round(cost, 2) as "Total Cost"
     from 
       tag_costs
     order by 
@@ -170,15 +171,16 @@ query "monthly_cost_by_tag_value" {
 
   param "line_item_usage_account_id" {}
   param "tag_key" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "top_10_tag_values_by_cost" {
-  title       = "Top 10 Tag Values by Cost"
-  description = "List of top 10 values for the selected tag keys with the highest cost."
-  sql         = <<-EOQ
+query "cost_by_tag_key_dashboard_top_10_tag_values" {
+  sql = <<-EOQ
     with parsed_entries as (
-      select 
-        distinct unnest(json_keys(resource_tags)) as tag_key,
+      select
+        unnest(json_keys(resource_tags)) as tag_key,
         json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
         line_item_usage_account_id,
         line_item_unblended_cost
@@ -186,6 +188,7 @@ query "top_10_tag_values_by_cost" {
         aws_cost_and_usage_report
       where
         resource_tags is not null
+        and ('all' in ($1) or line_item_usage_account_id in $1)
     ),
     filtered_entries as (
       select
@@ -195,22 +198,23 @@ query "top_10_tag_values_by_cost" {
       from 
         parsed_entries
       where 
-        ('all' in ($1) or line_item_usage_account_id in $1)
-        and tag_key in $2
+        ($2 = 'all' or tag_key = $2)
         and tag_value <> '""'
     ),
     tag_costs as (
       select 
-        tag_value as tag_with_value,
+        case 
+          when $2 = 'all' then concat(tag_key, ': ', replace(tag_value, '"', ''))
+          else replace(tag_value, '"', '')
+        end as tag_display,
         sum(line_item_unblended_cost) as cost
       from 
         filtered_entries
       group by 
-        tag_key,
-        tag_value
+        tag_display
     )
     select 
-      replace(tag_with_value, '"', '') as "Tag Value",
+      tag_display as "Tag Value",
       round(cost, 2) as "Total Cost"
     from 
       tag_costs
@@ -220,15 +224,16 @@ query "top_10_tag_values_by_cost" {
 
   param "line_item_usage_account_id" {}
   param "tag_key" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "tag_value_cost_breakdown" {
-  title       = "Cost by Tag Value and Account"
-  description = "Detailed cost breakdown by tag value and account for the selected tag keys."
-  sql         = <<-EOQ
+query "cost_by_tag_key_dashboard_tag_value_costs" {
+  sql = <<-EOQ
     with parsed_entries as (
-      select 
-        distinct unnest(json_keys(resource_tags)) as tag_key,
+      select
+        unnest(json_keys(resource_tags)) as tag_key,
         json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
         line_item_usage_account_id,
         line_item_unblended_cost,
@@ -237,6 +242,7 @@ query "tag_value_cost_breakdown" {
         aws_cost_and_usage_report
       where
         resource_tags is not null
+        and ('all' in ($1) or line_item_usage_account_id in $1)
     ),
     filtered_entries as (
       select
@@ -248,31 +254,44 @@ query "tag_value_cost_breakdown" {
       from 
         parsed_entries
       where 
-        ('all' in ($1) or line_item_usage_account_id in $1)
-        and tag_key in $2
+        ($2 = 'all' or tag_key = $2)
         and tag_value <> '""'
+    ),
+    grouped_costs as (
+      select
+        case 
+          when $2 = 'all' then concat(tag_key, ': ', replace(tag_value, '"', ''))
+          else replace(tag_value, '"', '')
+        end as tag_display,
+        line_item_usage_account_id,
+        coalesce(product_region_code, 'global') as region,
+        sum(line_item_unblended_cost) as cost
+      from 
+        filtered_entries
+      group by 
+        tag_display,
+        line_item_usage_account_id,
+        region
     )
     select 
-      replace(tag_value, '"', '') as "Tag Value",
+      tag_display as "Tag Value",
       line_item_usage_account_id as "Account ID",
-      coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      region as "Region",
+      round(cost, 2) as "Total Cost"
     from 
-      filtered_entries
-    group by 
-      tag_key,
-      tag_value,
-      line_item_usage_account_id,
-      product_region_code
+      grouped_costs
     order by 
-      "Total Cost" desc;
+      cost desc;
   EOQ
 
   param "line_item_usage_account_id" {}
   param "tag_key" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "tag_key_aws_account_input" {
+query "cost_by_tag_key_dashboard_accounts_input" {
   sql = <<-EOQ
     select
       'All' as label,
@@ -284,35 +303,34 @@ query "tag_key_aws_account_input" {
     from
       aws_cost_and_usage_report;
   EOQ
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "tag_keys_input" {
-  title       = "Tag Keys Input"
-  description = "List of available tag keys in AWS cost and usage reports."
-  sql         = <<-EOQ
-    with flattened_tags as (
-      select 
-        unnest(json_keys(resource_tags)) as tag_key,
-        json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value
-      from 
-        aws_cost_and_usage_report
-      where 
-        ('all' in ($1) or line_item_usage_account_id in $1)
-        and resource_tags is not null
-        and array_length(json_keys(resource_tags)) > 0
-    )
+query "cost_by_tag_key_dashboard_tag_keys_input" {
+  sql = <<-EOQ
+    select
+      'All' as label,
+      'all' as value
+    union all
     select distinct
-      tag_key as label, 
-      tag_key as value
+      t.tag_key as label, 
+      t.tag_key as value
     from 
-      flattened_tags
+      aws_cost_and_usage_report,
+      unnest(json_keys(resource_tags)) as t(tag_key)
     where 
-      tag_key is not null 
-      and tag_key <> ''
-      and tag_value <> '""'
+      ('all' in ($1) or line_item_usage_account_id in $1)
+      and resource_tags is not null 
+      and t.tag_key <> ''
+      and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
     order by 
       label;
   EOQ
 
   param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }

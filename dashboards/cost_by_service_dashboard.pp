@@ -7,33 +7,21 @@ dashboard "cost_by_service_dashboard" {
     service = "AWS/CostAndUsageReport"
   }
 
-  input "account_input" {
+  input "cost_by_service_dashboard_accounts" {
     title       = "Select accounts:"
     description = "Choose a single AWS account to analyze"
     type        = "multiselect"
     width       = 2
-    query       = query.service_accounts_input
-  }
-
-  input "service_input" {
-    title       = "Select services:"
-    description = "Select an AWS service to filter resources."
-    type        = "multiselect"
-    query       = query.service_input
-    args = {
-      "line_item_usage_account_id" = self.input.account_input.value
-    }
-    width = 2
+    query       = query.cost_by_service_dashboard_accounts_input
   }
 
   container {
     # Combined card showing Total Cost with Currency
     card {
       width = 4
-      query = query.service_total_cost_with_currency
+      query = query.cost_by_service_dashboard_total_cost
       args = {
-        "account_id"             = self.input.account_input.value
-        "line_item_product_code" = self.input.service_input.value
+        "account_id" = self.input.cost_by_service_dashboard_accounts.value
       }
     }
   }
@@ -44,10 +32,9 @@ dashboard "cost_by_service_dashboard" {
       title = "Monthly Cost Trend"
       #type  = "bar"
       width = 6
-      query = query.service_monthly_cost
+      query = query.cost_by_service_dashboard_monthly_cost
       args = {
-        "account_id"             = self.input.account_input.value
-        "line_item_product_code" = self.input.service_input.value
+        "account_id" = self.input.cost_by_service_dashboard_accounts.value
       }
 
       legend {
@@ -59,10 +46,9 @@ dashboard "cost_by_service_dashboard" {
       title = "Top 10 Services by Cost"
       type  = "table"
       width = 6
-      query = query.service_top_10
+      query = query.cost_by_service_dashboard_top_10_services
       args = {
-        "account_id"             = self.input.account_input.value
-        "line_item_product_code" = self.input.service_input.value
+        "account_id" = self.input.cost_by_service_dashboard_accounts.value
       }
     }
   }
@@ -72,10 +58,9 @@ dashboard "cost_by_service_dashboard" {
     table {
       title = "Service Costs by Account"
       width = 12
-      query = query.service_cost_details
+      query = query.cost_by_service_dashboard_service_costs
       args = {
-        "account_id"             = self.input.account_input.value
-        "line_item_product_code" = self.input.service_input.value
+        "account_id" = self.input.cost_by_service_dashboard_accounts.value
       }
     }
   }
@@ -83,10 +68,8 @@ dashboard "cost_by_service_dashboard" {
 
 # Query Definitions
 
-query "service_total_cost_with_currency" {
-  title       = "Total Cost"
-  description = "Total unblended cost for the selected AWS account with currency."
-  sql         = <<-EOQ
+query "cost_by_service_dashboard_total_cost" {
+  sql = <<-EOQ
     select 
       'Total Cost' as metric,
       concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
@@ -94,45 +77,44 @@ query "service_total_cost_with_currency" {
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
-      and ('all' in ($2) or line_item_product_code in $2)
     group by
       line_item_currency_code
     limit 1;
   EOQ
 
   param "account_id" {}
-  param "line_item_product_code" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "service_monthly_cost" {
-  title       = "Monthly Cost Trend"
-  description = "Aggregated cost trend over the last 6 months for the selected AWS account."
-  sql         = <<-EOQ
+query "cost_by_service_dashboard_monthly_cost" {
+  sql = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
-      line_item_product_code,
+      line_item_product_code as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
-      and ('all' in ($2) or line_item_product_code in $2)
       and line_item_usage_start_date >= current_date - interval '6' month
     group by 
       date_trunc('month', line_item_usage_start_date),
       line_item_product_code
     order by 
-      date_trunc('month', line_item_usage_start_date);
+      date_trunc('month', line_item_usage_start_date),
+      sum(line_item_unblended_cost) desc;
   EOQ
 
   param "account_id" {}
-  param "line_item_product_code" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "service_top_10" {
-  title       = "Top 10 Services by Cost"
-  description = "List of top 10 AWS services with the highest costs for the selected account."
-  sql         = <<-EOQ
+query "cost_by_service_dashboard_top_10_services" {
+  sql = <<-EOQ
     select 
       line_item_product_code as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
@@ -140,7 +122,6 @@ query "service_top_10" {
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
-      and ('all' in ($2) or line_item_product_code in $2)
     group by 
       line_item_product_code
     order by 
@@ -149,37 +130,38 @@ query "service_top_10" {
   EOQ
 
   param "account_id" {}
-  param "line_item_product_code" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "service_cost_details" {
-  title       = "Service Cost Details"
-  description = "Detailed cost breakdown per AWS service, including region and account."
-  sql         = <<-EOQ
+query "cost_by_service_dashboard_service_costs" {
+  sql = <<-EOQ
     select 
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
+      coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
-      and ('all' in ($2) or line_item_product_code in $2)
     group by 
       line_item_product_code,
-      line_item_usage_account_id
+      line_item_usage_account_id,
+      coalesce(product_region_code, 'global')
     order by 
       sum(line_item_unblended_cost) desc;
   EOQ
 
   param "account_id" {}
-  param "line_item_product_code" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "service_accounts_input" {
-  title       = "AWS Account Selection"
-  description = "Multi-select input to filter the dashboard by AWS accounts."
-  sql         = <<-EOQ
+query "cost_by_service_dashboard_accounts_input" {
+  sql = <<-EOQ
     select
       'All' as label,
       'all' as value
@@ -188,26 +170,7 @@ query "service_accounts_input" {
       line_item_usage_account_id as value
     from aws_cost_and_usage_report;
   EOQ
-}
-
-query "service_input" {
-  title       = "AWS Service Selection"
-  description = "Select an AWS service for filtering resources."
-  sql         = <<-EOQ
-    select 
-      'All' as label,
-      'all' as value
-    union
-    select 
-      distinct line_item_product_code as label,
-      line_item_product_code as value
-    from 
-      aws_cost_and_usage_report
-    where 
-      ('all' in ($1) or line_item_usage_account_id in $1)
-    order by 
-      label;
-  EOQ
-
-  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }

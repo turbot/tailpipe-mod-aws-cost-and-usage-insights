@@ -7,11 +7,11 @@ dashboard "cost_by_tag_dashboard" {
     service = "AWS/CostAndUsageReport"
   }
 
-  input "account" {
-    title       = "Select accounts:"
+  input "cost_by_tag_dashboard_accounts" {
+    title       = "Select account(s):"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
-    query       = query.tag_details_aws_account_input
+    query       = query.cost_by_tag_dashboard_accounts_input
     width       = 2
   }
 
@@ -19,9 +19,9 @@ dashboard "cost_by_tag_dashboard" {
     # Combined card showing Total Cost with Currency
     card {
       width = 4
-      query = query.tag_total_cost_with_currency
+      query = query.cost_by_tag_dashboard_total_cost
       args = {
-        "line_item_usage_account_id" = self.input.account.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -32,9 +32,9 @@ dashboard "cost_by_tag_dashboard" {
       title = "Monthly Cost Trend"
       type  = "column"
       width = 6
-      query = query.monthly_cost_by_tag
+      query = query.cost_by_tag_dashboard_monthly_cost_trend
       args = {
-        "line_item_usage_account_id" = self.input.account.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
       }
 
       legend {
@@ -47,12 +47,12 @@ dashboard "cost_by_tag_dashboard" {
     }
 
     chart {
-      title = "Top 10 Tags"
+      title = "Top 10 Tags by Cost"
       type  = "table"
       width = 6
-      query = query.top_10_tags_by_cost
+      query = query.cost_by_tag_dashboard_top_10_tags_by_cost
       args = {
-        "line_item_usage_account_id" = self.input.account.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -62,9 +62,9 @@ dashboard "cost_by_tag_dashboard" {
     table {
       title = "Tag Costs by Account and Region"
       width = 12
-      query = query.tagged_resource_cost_breakdown
+      query = query.cost_by_tag_dashboard_tagged_resources
       args = {
-        "line_item_usage_account_id" = self.input.account.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -74,9 +74,9 @@ dashboard "cost_by_tag_dashboard" {
     table {
       title = "Untagged Resource Costs"
       width = 12
-      query = query.untagged_resource_cost_breakdown
+      query = query.cost_by_tag_dashboard_untagged_resources
       args = {
-        "line_item_usage_account_id" = self.input.account.value
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -84,10 +84,8 @@ dashboard "cost_by_tag_dashboard" {
 
 # Query Definitions
 
-query "tag_total_cost_with_currency" {
-  title       = "Total Cost"
-  description = "Total unblended cost for the selected AWS account with currency."
-  sql         = <<-EOQ
+query "cost_by_tag_dashboard_total_cost" {
+  sql = <<-EOQ
     select 
       'Total Cost' as metric,
       concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
@@ -101,12 +99,13 @@ query "tag_total_cost_with_currency" {
   EOQ
 
   param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "monthly_cost_by_tag" {
-  title       = "Monthly Cost Trend"
-  description = "Aggregated cost per month for each tag in the selected AWS account."
-  sql         = <<-EOQ
+query "cost_by_tag_dashboard_monthly_cost_trend" {
+  sql = <<-EOQ
     with parsed_entries as (
       select 
         distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -156,12 +155,13 @@ query "monthly_cost_by_tag" {
   EOQ
 
   param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "top_10_tags_by_cost" {
-  title       = "Top 10 Tags"
-  description = "List of top 10 tags with the highest cost in the selected AWS account."
-  sql         = <<-EOQ
+query "cost_by_tag_dashboard_top_10_tags_by_cost" {
+  sql = <<-EOQ
     with parsed_entries as (
     select 
       distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -208,12 +208,13 @@ query "top_10_tags_by_cost" {
   EOQ
 
   param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "tagged_resource_cost_breakdown" {
-  title       = "Tagged Resource Cost"
-  description = "Detailed cost breakdown of resources with tags."
-  sql         = <<-EOQ
+query "cost_by_tag_dashboard_tagged_resources" {
+  sql = <<-EOQ
     with parsed_entries as (
     select 
       distinct unnest(json_keys(resource_tags)) as tag_key,
@@ -260,12 +261,13 @@ query "tagged_resource_cost_breakdown" {
   EOQ
 
   param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "untagged_resource_cost_breakdown" {
-  title       = "Untagged Resources Cost"
-  description = "Detailed cost breakdown of resources without any tags."
-  sql         = <<-EOQ
+query "cost_by_tag_dashboard_untagged_resources" {
+  sql = <<-EOQ
     with resource_tags_exploded as (
       -- Explode all tags for each resource
       select 
@@ -356,9 +358,12 @@ query "untagged_resource_cost_breakdown" {
   EOQ
 
   param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "tag_details_aws_account_input" {
+query "cost_by_tag_dashboard_accounts_input" {
   sql = <<-EOQ
     select
       'All' as label,
@@ -370,4 +375,7 @@ query "tag_details_aws_account_input" {
     from
       aws_cost_and_usage_report;
   EOQ
+  tags = {
+    folder = "Hidden"
+  }
 }

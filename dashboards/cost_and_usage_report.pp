@@ -1,31 +1,31 @@
-dashboard "cost_and_usage_detail_report" {
-  title         = "Cost and Usage Detail Report"
-  documentation = file("./dashboards/docs/cost_and_usage_detail_report.md")
+dashboard "cost_and_usage_report" {
+  title         = "Cost and Usage Report"
+  documentation = file("./dashboards/docs/cost_and_usage_report.md")
 
   tags = {
-    type    = "Detail"
+    type    = "Report"
     service = "AWS/CostAndUsageReport"
   }
 
   container {
     # Input filters
-    input "account_ids" {
+    input "cost_and_usage_report_account_ids" {
       title = "Select accounts:"
-      query = query.cost_and_usage_detail_report_account_ids_input
+      query = query.cost_and_usage_report_account_ids_input
       type  = "multiselect"
       width = 2
     }
 
-    input "regions" {
+    input "cost_and_usage_report_regions" {
       title = "Select regions:"
-      query = query.cost_and_usage_detail_report_regions_input
+      query = query.cost_and_usage_report_regions_input
       type  = "multiselect"
       width = 2
     }
 
-    input "services" {
+    input "cost_and_usage_report_services" {
       title = "Select services:"
-      query = query.cost_and_usage_detail_report_services_input
+      query = query.cost_and_usage_report_services_input
       type  = "multiselect"
       width = 2
     }
@@ -34,12 +34,12 @@ dashboard "cost_and_usage_detail_report" {
   container {
     # Total count card
     card {
-      query = query.cost_and_usage_detail_report_total_records
+      query = query.cost_and_usage_report_total_records
       width = 2
       args = [
-        self.input.account_ids.value,
-        self.input.regions.value,
-        self.input.services.value
+        self.input.cost_and_usage_report_account_ids.value,
+        self.input.cost_and_usage_report_regions.value,
+        self.input.cost_and_usage_report_services.value
       ]
     }
   }
@@ -48,11 +48,11 @@ dashboard "cost_and_usage_detail_report" {
     # Detailed table
     table {
       title = "Note: This table shows a maximum of 10,000 rows"
-      query = query.cost_and_usage_detail_report_table
+      query = query.cost_and_usage_report_table
       args = [
-        self.input.account_ids.value,
-        self.input.regions.value,
-        self.input.services.value
+        self.input.cost_and_usage_report_account_ids.value,
+        self.input.cost_and_usage_report_regions.value,
+        self.input.cost_and_usage_report_services.value
       ]
     }
   }
@@ -60,7 +60,7 @@ dashboard "cost_and_usage_detail_report" {
 
 # Main queries
 
-query "cost_and_usage_detail_report_total_records" {
+query "cost_and_usage_report_total_records" {
   sql = <<-EOQ
     select
       count(*) as "Total Records"
@@ -73,7 +73,7 @@ query "cost_and_usage_detail_report_total_records" {
   EOQ
 }
 
-query "cost_and_usage_detail_report_table" {
+query "cost_and_usage_report_table" {
   sql = <<-EOQ
     select
       tp_timestamp,
@@ -92,7 +92,7 @@ query "cost_and_usage_detail_report_table" {
 
 # Input queries
 
-query "cost_and_usage_detail_report_account_ids_input" {
+query "cost_and_usage_report_account_ids_input" {
   sql = <<-EOQ
     with account_ids as (
       select
@@ -110,11 +110,11 @@ query "cost_and_usage_detail_report_account_ids_input" {
       account_id as label,
       account_id as value
     from
-      account_ids
+      account_ids;
   EOQ
 }
 
-query "cost_and_usage_detail_report_regions_input" {
+query "cost_and_usage_report_regions_input" {
   sql = <<-EOQ
     with regions as (
       select
@@ -132,11 +132,11 @@ query "cost_and_usage_detail_report_regions_input" {
       region as label,
       region as value
     from
-      regions
+      regions;
   EOQ
 }
 
-query "cost_and_usage_detail_report_services_input" {
+query "cost_and_usage_report_services_input" {
   sql = <<-EOQ
     with services as (
       select

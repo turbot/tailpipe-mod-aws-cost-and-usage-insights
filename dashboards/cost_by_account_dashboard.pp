@@ -9,12 +9,12 @@ dashboard "cost_by_account_dashboard" {
 
   container {
     # Multi-select Account Input
-    input "accounts_input" {
-      title       = "Select accounts:"
+    input "cost_by_account_dashboard_accounts" {
+      title       = "Select account(s):"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
-      query       = query.accounts_input
+      query       = query.cost_by_account_dashboard_accounts_input
     }
   }
 
@@ -22,9 +22,9 @@ dashboard "cost_by_account_dashboard" {
     # Combined card showing Total Cost with Currency
     card {
       width = 4
-      query = query.account_total_cost_with_currency
+      query = query.cost_by_account_dashboard_total_cost
       args = {
-        "line_item_usage_account_ids" = self.input.accounts_input.value
+        "line_item_usage_account_ids" = self.input.cost_by_account_dashboard_accounts.value
       }
     }
   }
@@ -33,12 +33,10 @@ dashboard "cost_by_account_dashboard" {
     # Cost Trend Charts
     chart {
       title = "Monthly Cost Trend"
-      #type  = "column"
-      #type  = "line"
       width = 6
-      query = query.monthly_cost_trend
+      query = query.cost_by_account_dashboard_monthly_cost
       args = {
-        "line_item_usage_account_ids" = self.input.accounts_input.value
+        "line_item_usage_account_ids" = self.input.cost_by_account_dashboard_accounts.value
       }
 
       legend {
@@ -54,9 +52,9 @@ dashboard "cost_by_account_dashboard" {
       title = "Top 10 Accounts"
       type  = "table"
       width = 6
-      query = query.account_top_10
+      query = query.cost_by_account_dashboard_top_10_accounts
       args = {
-        "line_item_usage_account_ids" = self.input.accounts_input.value
+        "line_item_usage_account_ids" = self.input.cost_by_account_dashboard_accounts.value
       }
 
     }
@@ -67,9 +65,9 @@ dashboard "cost_by_account_dashboard" {
     table {
       title = "Account Costs"
       width = 12
-      query = query.account_cost_details
+      query = query.cost_by_account_dashboard_account_costs
       args = {
-        "line_item_usage_account_ids" = self.input.accounts_input.value
+        "line_item_usage_account_ids" = self.input.cost_by_account_dashboard_accounts.value
       }
     }
   }
@@ -77,10 +75,8 @@ dashboard "cost_by_account_dashboard" {
 
 # Query Definitions
 
-query "account_total_cost_with_currency" {
-  title       = "Total Cost"
-  description = "Aggregated total cost across all AWS accounts with currency."
-  sql         = <<-EOQ
+query "cost_by_account_dashboard_total_cost" {
+  sql = <<-EOQ
     select 
       'Total Cost' as metric,
       concat(round(sum(line_item_unblended_cost), 2), ' ', line_item_currency_code) as value
@@ -94,12 +90,13 @@ query "account_total_cost_with_currency" {
   EOQ
 
   param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "monthly_cost_trend" {
-  title       = "Monthly Cost Trend"
-  description = "Aggregated cost trend over the last 6 months across AWS accounts, grouped by account ID."
-  sql         = <<-EOQ
+query "cost_by_account_dashboard_monthly_cost" {
+  sql = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
       line_item_usage_account_id as "Account",
@@ -114,19 +111,19 @@ query "monthly_cost_trend" {
       line_item_usage_account_id
     order by 
       date_trunc('month', line_item_usage_start_date),
-      line_item_usage_account_id;
+      sum(line_item_unblended_cost) desc;
   EOQ
 
   param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "account_top_10" {
-  title       = "Top 10 Accounts"
-  description = "List of top 10 AWS accounts with the highest costs."
-  sql         = <<-EOQ
+query "cost_by_account_dashboard_top_10_accounts" {
+  sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost"
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -140,15 +137,15 @@ query "account_top_10" {
   EOQ
 
   param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "account_cost_details" {
-  title       = "Account Cost Details"
-  description = "Detailed cost breakdown per AWS account, including number of services and regions used."
-  sql         = <<-EOQ
+query "cost_by_account_dashboard_account_costs" {
+  sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      --format('{:.2f}', round(sum(line_item_unblended_cost), 2)) as "Total Cost",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -161,12 +158,13 @@ query "account_cost_details" {
   EOQ
 
   param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
 }
 
-query "accounts_input" {
-  title       = "AWS Account Selection"
-  description = "Multi-select input to filter the dashboard by AWS accounts."
-  sql         = <<-EOQ
+query "cost_by_account_dashboard_accounts_input" {
+  sql = <<-EOQ
     select
       'All' as label,
       'all' as value
@@ -175,4 +173,7 @@ query "accounts_input" {
       line_item_usage_account_id as value
     from aws_cost_and_usage_report;
   EOQ
+  tags = {
+    folder = "Hidden"
+  }
 }
