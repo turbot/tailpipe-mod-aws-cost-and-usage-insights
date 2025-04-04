@@ -1,4 +1,4 @@
-mod "aws_cost_usage_report_detections" {
+mod "aws_cost_usage_report_insights" {
   # hub metadata
   title         = "AWS Cost and Usage Report Insights"
   description   = "Monitor and analyze costs across your AWS accounts using pre-built dashboards for AWS Cost and Usage Reports with Powerpipe and Tailpipe."
