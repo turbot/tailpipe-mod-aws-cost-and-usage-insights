@@ -194,7 +194,9 @@ query "overview_dashboard_daily_cost" {
     order by
       date_trunc('day', line_item_usage_start_date);
   EOQ
+
   param "line_item_usage_account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -293,14 +295,25 @@ query "overview_dashboard_top_10_resources" {
 
 query "overview_dashboard_accounts_input" {
   sql = <<-EOQ
+    with account_ids as (
+      select
+        distinct line_item_usage_account_id as label,
+        line_item_usage_account_id as value
+      from
+        aws_cost_and_usage_report
+      order by label
+    )
     select
       'All' as label,
       'all' as value
     union all
-    select distinct line_item_usage_account_id as label,
-      line_item_usage_account_id as value
-    from aws_cost_and_usage_report;
+    select
+      label,
+      value
+    from
+      account_ids;
   EOQ
+
   tags = {
     folder = "Hidden"
   }

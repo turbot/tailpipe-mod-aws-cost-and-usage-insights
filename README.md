@@ -4,7 +4,7 @@
 
 [AWS](https://aws.amazon.com/) provides on-demand cloud computing platforms and APIs to authenticated customers on a metered pay-as-you-go basis.
 
-The [AWS Cost and Usage Insights Mod](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-and-usage-insights) contains pre-built dashboards which can be used to monitor and analyze costs across your AWS accounts.
+The [AWS Cost and Usage Insights Mod](https://hub.powerpipe.io/mods/turbot/tailpipe-mod-aws-cost-and-usage-insights) contains pre-built dashboards which can be used to monitor and analyze costs across your AWS accounts using [Cost and Usage Reports](https://docs.aws.amazon.com/cur/latest/userguide/table-dictionary-cur2.html).
 
 View insights in dashboards:
 ![image](docs/images/aws_cost_and_usage_overview_dashboard.png)
@@ -48,15 +48,6 @@ powerpipe server
 ```
 
 Browse and view your dashboards at **http://localhost:9033**.
-
-The dashboard provides insights into:
-
-- Total costs across AWS accounts
-- Cost distribution by services, regions, and resources
-- Cost anomaly detection
-- Daily and monthly cost trends
-- Usage type analysis
-- Top high-cost services
 
 ## Open Source & Contributing
 

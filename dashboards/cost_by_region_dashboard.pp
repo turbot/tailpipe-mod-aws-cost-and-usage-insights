@@ -275,14 +275,25 @@ query "cost_by_region_dashboard_region_costs" {
 
 query "cost_by_region_dashboard_accounts_input" {
   sql = <<-EOQ
+    with account_ids as (
+      select
+        distinct line_item_usage_account_id as label,
+        line_item_usage_account_id as value
+      from
+        aws_cost_and_usage_report
+      order by label
+    )
     select
       'All' as label,
       'all' as value
     union all
-    select distinct line_item_usage_account_id as label,
-      line_item_usage_account_id as value
-    from aws_cost_and_usage_report;
+    select
+      label,
+      value
+    from
+      account_ids;
   EOQ
+
   tags = {
     folder = "Hidden"
   }
