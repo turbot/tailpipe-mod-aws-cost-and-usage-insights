@@ -170,7 +170,6 @@ query "cost_by_service_dashboard_monthly_cost" {
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
-      and line_item_usage_start_date >= current_date - interval '6' month
     group by 
       date_trunc('month', line_item_usage_start_date),
       line_item_product_code
@@ -214,7 +213,7 @@ query "cost_by_service_dashboard_top_10_services" {
   sql = <<-EOQ
     select 
       line_item_product_code as "Service",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -238,7 +237,7 @@ query "cost_by_service_dashboard_service_costs" {
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 

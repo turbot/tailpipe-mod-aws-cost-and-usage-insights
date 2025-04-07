@@ -174,8 +174,7 @@ query "cost_by_account_dashboard_monthly_cost" {
     from 
       aws_cost_and_usage_report
     where 
-      line_item_usage_start_date >= current_date - interval '6' month 
-      and ('all' in ($1) or line_item_usage_account_id in $1)
+      ('all' in ($1) or line_item_usage_account_id in $1)
     group by 
       date_trunc('month', line_item_usage_start_date),
       line_item_usage_account_id
@@ -194,7 +193,7 @@ query "cost_by_account_dashboard_top_10_accounts" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      cast(round(sum(line_item_unblended_cost), 2) as double) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
@@ -216,7 +215,7 @@ query "cost_by_account_dashboard_account_costs" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where

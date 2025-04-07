@@ -53,7 +53,7 @@ dashboard "cost_by_resource_dashboard" {
     # Cost Trend and Top Resources
     chart {
       title = "Monthly Cost Trend"
-      type  = "column"
+      type  = "line"
       width = 6
       query = query.cost_by_resource_dashboard_monthly_cost
       args = {
@@ -65,11 +65,13 @@ dashboard "cost_by_resource_dashboard" {
       }
     }
 
+
     chart {
-      title = "Monthly Cost Trend"
-      type  = "line"
+      title = "Daily Cost Trend (Last 30 Days)"
       width = 6
-      query = query.cost_by_resource_dashboard_monthly_cost
+      type  = "line"
+      query = query.cost_by_resource_dashboard_daily_cost
+
       args = {
         "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
       }
@@ -172,7 +174,6 @@ query "cost_by_resource_dashboard_monthly_cost" {
       aws_cost_and_usage_report
     where 
       ('all' in ($1) or line_item_usage_account_id in $1)
-      and line_item_usage_start_date >= current_date - interval '6' month
       and line_item_resource_id is not null
     group by 
       date_trunc('month', line_item_usage_start_date),
@@ -222,7 +223,7 @@ query "cost_by_resource_dashboard_top_10_resources" {
       line_item_usage_account_id as "Account",
       line_item_product_code as "Service",
       coalesce(product_region_code, 'global') as "Region",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -251,7 +252,7 @@ query "cost_by_resource_dashboard_resource_costs" {
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 

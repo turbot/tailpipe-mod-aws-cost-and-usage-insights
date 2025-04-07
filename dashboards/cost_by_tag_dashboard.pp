@@ -339,7 +339,7 @@ query "cost_by_tag_dashboard_top_10_tags_by_cost" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      printf('%.2f', cost) as "Total Cost"
+      round(cost, 2) as "Total Cost"
     from 
       tag_costs
     order by cost desc
@@ -388,7 +388,7 @@ query "cost_by_tag_dashboard_tagged_resources" {
       concat(tag_key, ': ', tag_value) as "Tag",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       formatted_entries
     where
@@ -484,7 +484,7 @@ query "cost_by_tag_dashboard_untagged_resources" {
         else
           coalesce(product_region_code, 'global')
       end as "Region",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       combined_resources
     where 
