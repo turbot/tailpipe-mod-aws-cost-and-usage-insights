@@ -1,10 +1,7 @@
 This dashboard answers the following questions:
 
-- What is the total AWS cost for the selected account(s)?
-- What currency is used for cost calculations?
-- How have tag-related costs trended monthly over time?
-- What are the top 10 cost-driving tags?
-- What are the detailed costs for tagged resources by account and region?
-- What are the costs associated with untagged resources?
-
-> Note: Use the "Tagged Resource Costs" and "Untagged Resource Costs" tables to assess tag coverage and identify resources contributing to unallocated spend.
+- What is the total AWS cost associated with a specific tag key?
+- What currency is used for the selected account(s)?
+- How do costs break down by tag value?
+- What are the top 10 tag values contributing most to AWS cost?
+- What are the detailed costs by tag value, account, and region?

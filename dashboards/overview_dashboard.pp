@@ -1,5 +1,5 @@
 dashboard "overview_dashboard" {
-  title         = "Cost and Usage Overview Dashboard"
+  title         = "Cost and Usage Report: Overview"
   documentation = file("./dashboards/docs/overview_dashboard.md")
 
   tags = {

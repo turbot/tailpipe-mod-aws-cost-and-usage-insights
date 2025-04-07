@@ -1,5 +1,5 @@
 dashboard "cost_by_region_dashboard" {
-  title         = "Cost by Region Dashboard"
+  title         = "Cost and Usage Report: Cost by Region"
   documentation = file("./dashboards/docs/cost_by_region_dashboard.md")
 
   tags = {
