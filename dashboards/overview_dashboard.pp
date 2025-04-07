@@ -10,7 +10,7 @@ dashboard "overview_dashboard" {
   container {
     # Multi-select Account Input
     input "overview_dashboard_accounts" {
-      title       = "Select account(s):"
+      title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -31,10 +31,12 @@ dashboard "overview_dashboard" {
         "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
+
     # Card showing Total Accounts
     card {
       width = 2
       query = query.overview_dashboard_total_accounts
+      icon  = "groups"
       type  = "info"
 
       args = {
@@ -61,8 +63,8 @@ dashboard "overview_dashboard" {
     }
 
     chart {
-      title = "Daily Cost Trend (Last 30 Days)"
-      type  = "line"
+      title = "Daily Cost Trend"
+      type  = "heatmap"
       width = 6
       query = query.overview_dashboard_daily_cost
       args = {
@@ -180,13 +182,13 @@ query "overview_dashboard_monthly_cost" {
 query "overview_dashboard_daily_cost" {
   sql = <<-EOQ
     select
-      strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
+      --strftime(date_trunc('day', line_item_usage_start_date), '%b %d -%Y') as "Date",
+      strftime(date_trunc('day', line_item_usage_start_date), '%Y-%m-%d') as "Date",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
-      line_item_usage_start_date >= current_date - interval '30' day
-      and ('all' in ($1) or line_item_usage_account_id in $1)
+      ('all' in ($1) or line_item_usage_account_id in $1)
     group by
       date_trunc('day', line_item_usage_start_date)
     order by
@@ -245,7 +247,7 @@ query "overview_dashboard_top_10_regions" {
 query "overview_dashboard_top_10_services" {
   sql = <<-EOQ
     select
-      product_service_code as "Service",
+      coalesce(product_service_code, 'Other') as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report

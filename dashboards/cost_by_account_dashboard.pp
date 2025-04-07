@@ -10,7 +10,7 @@ dashboard "cost_by_account_dashboard" {
   container {
     # Multi-select Account Input
     input "cost_by_account_dashboard_accounts" {
-      title       = "Select account(s):"
+      title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -34,6 +34,7 @@ dashboard "cost_by_account_dashboard" {
     card {
       width = 2
       query = query.cost_by_account_dashboard_total_accounts
+      icon  = "groups"
       type  = "info"
 
       args = {
@@ -45,8 +46,8 @@ dashboard "cost_by_account_dashboard" {
   container {
     # Cost Trend Charts
     chart {
-      title = "Monthly Cost Trend"
-      type  = "line"
+      title = "Monthly Cost Stack"
+      type  = "column"
       width = 6
       query = query.cost_by_account_dashboard_monthly_cost
       args = {
@@ -62,6 +63,22 @@ dashboard "cost_by_account_dashboard" {
       }
     }
 
+    chart {
+      title = "Monthly Cost Trend"
+      type  = "line"
+      width = 6
+      query = query.cost_by_account_dashboard_monthly_cost
+      args = {
+        "line_item_usage_account_ids" = self.input.cost_by_account_dashboard_accounts.value
+      }
+
+      legend {
+        display = "none"
+      }
+    }
+
+
+    /*
     chart {
       title = "Daily Cost Trend (Last 30 Days)"
       width = 6
@@ -87,6 +104,7 @@ dashboard "cost_by_account_dashboard" {
       }
 
     }
+    */
   }
 
   container {

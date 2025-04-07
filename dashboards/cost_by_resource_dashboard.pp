@@ -8,7 +8,7 @@ dashboard "cost_by_resource_dashboard" {
   }
 
   input "cost_by_resource_dashboard_account" {
-    title       = "Select account(s):"
+    title       = "Select accounts:"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.cost_by_resource_dashboard_aws_account_input
@@ -24,7 +24,7 @@ dashboard "cost_by_resource_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
     }
 
@@ -34,7 +34,7 @@ dashboard "cost_by_resource_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
     }
 
@@ -44,7 +44,7 @@ dashboard "cost_by_resource_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
     }
   }
@@ -57,7 +57,7 @@ dashboard "cost_by_resource_dashboard" {
       width = 6
       query = query.cost_by_resource_dashboard_monthly_cost
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
 
       legend {
@@ -73,7 +73,7 @@ dashboard "cost_by_resource_dashboard" {
       query = query.cost_by_resource_dashboard_daily_cost
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
 
       legend {
@@ -87,7 +87,7 @@ dashboard "cost_by_resource_dashboard" {
       width = 6
       query = query.cost_by_resource_dashboard_top_10_resources
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
     }
   }
@@ -99,7 +99,7 @@ dashboard "cost_by_resource_dashboard" {
       width = 12
       query = query.cost_by_resource_dashboard_resource_costs
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+        "line_item_usage_account_ids" = self.input.cost_by_resource_dashboard_account.value
       }
     }
   }
@@ -121,7 +121,7 @@ query "cost_by_resource_dashboard_total_cost" {
     limit 1;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -139,7 +139,7 @@ query "cost_by_resource_dashboard_total_accounts" {
       and line_item_resource_id is not null;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -157,7 +157,7 @@ query "cost_by_resource_dashboard_total_resources" {
       and line_item_resource_id is not null;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -184,7 +184,7 @@ query "cost_by_resource_dashboard_monthly_cost" {
     limit 10;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -210,7 +210,7 @@ query "cost_by_resource_dashboard_daily_cost" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -239,7 +239,7 @@ query "cost_by_resource_dashboard_top_10_resources" {
     limit 10;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -268,7 +268,7 @@ query "cost_by_resource_dashboard_resource_costs" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }

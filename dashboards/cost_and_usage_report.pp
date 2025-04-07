@@ -10,21 +10,21 @@ dashboard "cost_and_usage_report" {
   container {
     # Input filters
     input "cost_and_usage_report_account_ids" {
-      title = "Select account(s):"
+      title = "Select accounts:"
       query = query.cost_and_usage_report_account_ids_input
       type  = "multiselect"
       width = 2
     }
 
     input "cost_and_usage_report_regions" {
-      title = "Select region(s):"
+      title = "Select regions:"
       query = query.cost_and_usage_report_regions_input
       type  = "multiselect"
       width = 2
     }
 
     input "cost_and_usage_report_services" {
-      title = "Select service(s):"
+      title = "Select services:"
       query = query.cost_and_usage_report_services_input
       type  = "multiselect"
       width = 2

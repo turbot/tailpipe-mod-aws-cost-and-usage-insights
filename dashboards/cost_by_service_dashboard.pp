@@ -31,6 +31,7 @@ dashboard "cost_by_service_dashboard" {
     card {
       width = 2
       query = query.cost_by_service_dashboard_total_accounts
+      icon  = "groups"
       type  = "info"
 
       args = {
@@ -41,6 +42,7 @@ dashboard "cost_by_service_dashboard" {
     card {
       width = 2
       query = query.cost_by_service_dashboard_total_services
+      icon  = "layers"
       type  = "info"
 
       args = {
@@ -51,6 +53,20 @@ dashboard "cost_by_service_dashboard" {
 
   container {
     # Cost Trend Graphs
+    chart {
+      title = "Monthly Cost Stack"
+      type  = "column"
+      width = 6
+      query = query.cost_by_service_dashboard_monthly_cost
+      args = {
+        "account_id" = self.input.cost_by_service_dashboard_accounts.value
+      }
+
+      legend {
+        display = "none"
+      }
+    }
+
     chart {
       title = "Monthly Cost Trend"
       type  = "line"
@@ -65,21 +81,7 @@ dashboard "cost_by_service_dashboard" {
       }
     }
 
-    chart {
-      title = "Daily Cost Trend (Last 30 Days)"
-      type  = "line"
-      width = 6
-      query = query.cost_by_service_dashboard_daily_cost
-
-      args = {
-        "account_id" = self.input.cost_by_service_dashboard_accounts.value
-      }
-
-      legend {
-        display = "none"
-      }
-    }
-
+    /*
     chart {
       title = "Top 10 Services by Cost"
       type  = "table"
@@ -89,6 +91,7 @@ dashboard "cost_by_service_dashboard" {
         "account_id" = self.input.cost_by_service_dashboard_accounts.value
       }
     }
+    */
   }
 
   container {
@@ -164,7 +167,7 @@ query "cost_by_service_dashboard_monthly_cost" {
   sql = <<-EOQ
     select 
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
-      line_item_product_code as "Service",
+      coalesce(line_item_product_code, 'N/A') as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -187,8 +190,8 @@ query "cost_by_service_dashboard_monthly_cost" {
 query "cost_by_service_dashboard_daily_cost" {
   sql = <<-EOQ
     select
-      strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
-      line_item_product_code as "Service",
+      date_trunc('day', line_item_usage_start_date) as "Date",
+      coalesce(line_item_product_code, 'N/A') as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
@@ -212,7 +215,7 @@ query "cost_by_service_dashboard_daily_cost" {
 query "cost_by_service_dashboard_top_10_services" {
   sql = <<-EOQ
     select 
-      line_item_product_code as "Service",
+      coalesce(line_item_product_code, 'N/A') as "Service",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
@@ -234,7 +237,7 @@ query "cost_by_service_dashboard_top_10_services" {
 query "cost_by_service_dashboard_service_costs" {
   sql = <<-EOQ
     select 
-      line_item_product_code as "Service",
+      coalesce(line_item_product_code, 'N/A') as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"

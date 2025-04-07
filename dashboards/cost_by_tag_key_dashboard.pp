@@ -8,8 +8,8 @@ dashboard "cost_by_tag_key_dashboard" {
   }
 
   input "cost_by_tag_key_dashboard_accounts" {
-    title       = "Select account(s):"
-    description = "Select an AWS account to filter the dashboard."
+    title       = "Select accounts:"
+    description = "Choose one or more AWS accounts to analyze."
     type        = "multiselect"
     query       = query.cost_by_tag_key_dashboard_accounts_input
     width       = 2
@@ -23,7 +23,7 @@ dashboard "cost_by_tag_key_dashboard" {
     width       = 2
 
     args = {
-      "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
+      "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value
     }
   }
 
@@ -36,10 +36,22 @@ dashboard "cost_by_tag_key_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
-        "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "tag_key"                     = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
     }
+
+    card {
+      width = 2
+      query = query.cost_by_tag_key_dashboard_total_accounts
+      icon  = "groups"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value
+      }
+    }
+
   }
 
   container {
@@ -50,13 +62,31 @@ dashboard "cost_by_tag_key_dashboard" {
       width = 6
       query = query.cost_by_tag_key_dashboard_monthly_cost
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
-        "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "tag_key"                     = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
+
       legend {
         display = "none"
       }
     }
+
+    /*
+    chart {
+      title = "Monthly Cost by Tag Value Trend"
+      type  = "line"
+      width = 6
+      query = query.cost_by_tag_key_dashboard_monthly_cost
+      args = {
+        "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "tag_key"                     = self.input.cost_by_tag_key_dashboard_tag_key.value
+      }
+
+      legend {
+        display = "none"
+      }
+    }
+    */
 
     chart {
       title = "Top 10 Tag Values by Cost"
@@ -64,10 +94,11 @@ dashboard "cost_by_tag_key_dashboard" {
       width = 6
       query = query.cost_by_tag_key_dashboard_top_10_tag_values
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value,
+        "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value,
         "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
     }
+
   }
 
   container {
@@ -77,7 +108,7 @@ dashboard "cost_by_tag_key_dashboard" {
       width = 12
       query = query.cost_by_tag_key_dashboard_tag_value_costs
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_key_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_key_dashboard_accounts.value
         "tag_key"                    = self.input.cost_by_tag_key_dashboard_tag_key.value
       }
     }
@@ -108,18 +139,36 @@ query "cost_by_tag_key_dashboard_total_cost" {
         $2 = 'all' or tag_key = $2
     )
     select 
-      'Total Cost' as metric,
-      concat(round(cost, 2), ' ', currency) as value
+      'Total Cost (' || currency || ')' as label,
+      round(cost, 2) as value
     from 
       filtered_entries;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   param "tag_key" {}
   tags = {
     folder = "Hidden"
   }
 }
+
+query "cost_by_tag_key_dashboard_total_accounts" {
+  sql = <<-EOQ
+    select
+      'Accounts' as label,
+      count(distinct line_item_usage_account_id) as value
+    from
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1);
+  EOQ
+
+  param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
 
 query "cost_by_tag_key_dashboard_monthly_cost" {
   sql = <<-EOQ
@@ -174,7 +223,7 @@ query "cost_by_tag_key_dashboard_monthly_cost" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   param "tag_key" {}
   tags = {
     folder = "Hidden"
@@ -227,7 +276,7 @@ query "cost_by_tag_key_dashboard_top_10_tag_values" {
     limit 10;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   param "tag_key" {}
   tags = {
     folder = "Hidden"
@@ -290,7 +339,7 @@ query "cost_by_tag_key_dashboard_tag_value_costs" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   param "tag_key" {}
   tags = {
     folder = "Hidden"
@@ -323,7 +372,7 @@ query "cost_by_tag_key_dashboard_tag_key_input" {
       aws_cost_and_usage_report,
       unnest(json_keys(resource_tags)) as t(tag_key)
     where
-      line_item_usage_account_id in $1
+      ('all' in ($1) or line_item_usage_account_id in $1)
       and resource_tags is not null
       and t.tag_key <> ''
       and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
@@ -331,7 +380,7 @@ query "cost_by_tag_key_dashboard_tag_key_input" {
       label;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }

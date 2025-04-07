@@ -8,7 +8,7 @@ dashboard "cost_by_tag_dashboard" {
   }
 
   input "cost_by_tag_dashboard_accounts" {
-    title       = "Select account(s):"
+    title       = "Select accounts:"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.cost_by_tag_dashboard_accounts_input
@@ -24,7 +24,7 @@ dashboard "cost_by_tag_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
 
@@ -34,7 +34,7 @@ dashboard "cost_by_tag_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
 
@@ -45,7 +45,7 @@ dashboard "cost_by_tag_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -58,7 +58,7 @@ dashboard "cost_by_tag_dashboard" {
       width = 6
       query = query.cost_by_tag_dashboard_monthly_cost_trend
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
 
       legend {
@@ -77,7 +77,7 @@ dashboard "cost_by_tag_dashboard" {
       query = query.cost_by_tag_dashboard_daily_cost_trend
 
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
 
       legend {
@@ -91,7 +91,7 @@ dashboard "cost_by_tag_dashboard" {
       width = 6
       query = query.cost_by_tag_dashboard_top_10_tags_by_cost
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -103,7 +103,7 @@ dashboard "cost_by_tag_dashboard" {
       width = 12
       query = query.cost_by_tag_dashboard_tagged_resources
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -115,7 +115,7 @@ dashboard "cost_by_tag_dashboard" {
       width = 12
       query = query.cost_by_tag_dashboard_untagged_resources
       args = {
-        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
   }
@@ -137,7 +137,7 @@ query "cost_by_tag_dashboard_total_cost" {
     limit 1;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -155,7 +155,7 @@ query "cost_by_tag_dashboard_total_accounts" {
       and resource_tags is not null;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -179,7 +179,7 @@ query "cost_by_tag_dashboard_total_tags" {
       all_tags;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -236,7 +236,7 @@ query "cost_by_tag_dashboard_monthly_cost_trend" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -294,7 +294,7 @@ query "cost_by_tag_dashboard_daily_cost_trend" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -347,7 +347,7 @@ query "cost_by_tag_dashboard_top_10_tags_by_cost" {
 
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -401,7 +401,7 @@ query "cost_by_tag_dashboard_tagged_resources" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
@@ -499,7 +499,7 @@ query "cost_by_tag_dashboard_untagged_resources" {
     limit 30;
   EOQ
 
-  param "line_item_usage_account_id" {}
+  param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
   }
