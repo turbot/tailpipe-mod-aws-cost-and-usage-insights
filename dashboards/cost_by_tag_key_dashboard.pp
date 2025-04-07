@@ -30,7 +30,7 @@ dashboard "cost_by_tag_key_dashboard" {
   container {
     # Combined card showing Total Cost with Currency
     card {
-      width = 4
+      width = 2
       query = query.cost_by_tag_key_dashboard_total_cost
       icon  = "attach_money"
       type  = "info"

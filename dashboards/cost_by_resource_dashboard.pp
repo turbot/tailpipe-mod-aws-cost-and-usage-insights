@@ -18,7 +18,7 @@ dashboard "cost_by_resource_dashboard" {
   container {
     # Combined card showing Total Cost with Currency
     card {
-      width = 4
+      width = 2
       query = query.cost_by_resource_dashboard_total_cost
       icon  = "attach_money"
       type  = "info"
@@ -31,7 +31,6 @@ dashboard "cost_by_resource_dashboard" {
     card {
       width = 2
       query = query.cost_by_resource_dashboard_total_accounts
-      icon  = "groups"
       type  = "info"
 
       args = {
@@ -42,7 +41,6 @@ dashboard "cost_by_resource_dashboard" {
     card {
       width = 2
       query = query.cost_by_resource_dashboard_total_resources
-      icon  = "layers"
       type  = "info"
 
       args = {
@@ -55,7 +53,7 @@ dashboard "cost_by_resource_dashboard" {
     # Cost Trend and Top Resources
     chart {
       title = "Monthly Cost Trend"
-      type  = "line"
+      type  = "column"
       width = 6
       query = query.cost_by_resource_dashboard_monthly_cost
       args = {
@@ -68,11 +66,10 @@ dashboard "cost_by_resource_dashboard" {
     }
 
     chart {
-      title = "Daily Cost Trend (Last 30 Days)"
-      width = 6
+      title = "Monthly Cost Trend"
       type  = "line"
-      query = query.cost_by_resource_dashboard_daily_cost
-
+      width = 6
+      query = query.cost_by_resource_dashboard_monthly_cost
       args = {
         "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
       }
@@ -131,7 +128,7 @@ query "cost_by_resource_dashboard_total_cost" {
 query "cost_by_resource_dashboard_total_accounts" {
   sql = <<-EOQ
     select
-      'Total Accounts' as label,
+      'Accounts' as label,
       count(distinct line_item_usage_account_id) as value
     from
       aws_cost_and_usage_report
@@ -149,7 +146,7 @@ query "cost_by_resource_dashboard_total_accounts" {
 query "cost_by_resource_dashboard_total_resources" {
   sql = <<-EOQ
     select
-      'Total Resources' as label,
+      'Resources' as label,
       count(distinct line_item_resource_id) as value
     from
       aws_cost_and_usage_report
@@ -183,7 +180,7 @@ query "cost_by_resource_dashboard_monthly_cost" {
     order by 
       date_trunc('month', line_item_usage_start_date),
       sum(line_item_unblended_cost) desc
-    limit 30;
+    limit 10;
   EOQ
 
   param "line_item_usage_account_id" {}

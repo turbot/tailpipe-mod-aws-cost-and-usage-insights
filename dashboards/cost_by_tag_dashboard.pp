@@ -18,7 +18,7 @@ dashboard "cost_by_tag_dashboard" {
   container {
     # Combined card showing Total Cost with Currency
     card {
-      width = 4
+      width = 2
       query = query.cost_by_tag_dashboard_total_cost
       icon  = "attach_money"
       type  = "info"
@@ -31,7 +31,6 @@ dashboard "cost_by_tag_dashboard" {
     card {
       width = 2
       query = query.cost_by_tag_dashboard_total_accounts
-      icon  = "groups"
       type  = "info"
 
       args = {
@@ -147,7 +146,7 @@ query "cost_by_tag_dashboard_total_cost" {
 query "cost_by_tag_dashboard_total_accounts" {
   sql = <<-EOQ
     select
-      'Total Accounts' as label,
+      'Accounts' as label,
       count(distinct line_item_usage_account_id) as value
     from 
       aws_cost_and_usage_report
@@ -174,7 +173,7 @@ query "cost_by_tag_dashboard_total_tags" {
         and resource_tags is not null
     )
     select
-      'Total Tags' as label,
+      'Tags' as label,
       count(distinct tag_key) as value
     from
       all_tags;

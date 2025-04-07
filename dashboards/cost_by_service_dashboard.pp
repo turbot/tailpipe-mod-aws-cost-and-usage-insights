@@ -18,7 +18,7 @@ dashboard "cost_by_service_dashboard" {
   container {
     # Combined card showing Total Cost with Currency
     card {
-      width = 4
+      width = 2
       query = query.cost_by_service_dashboard_total_cost
       icon  = "attach_money"
       type  = "info"
@@ -31,7 +31,6 @@ dashboard "cost_by_service_dashboard" {
     card {
       width = 2
       query = query.cost_by_service_dashboard_total_accounts
-      icon  = "groups"
       type  = "info"
 
       args = {
@@ -42,7 +41,6 @@ dashboard "cost_by_service_dashboard" {
     card {
       width = 2
       query = query.cost_by_service_dashboard_total_services
-      icon  = "layers"
       type  = "info"
 
       args = {
@@ -131,7 +129,7 @@ query "cost_by_service_dashboard_total_cost" {
 query "cost_by_service_dashboard_total_accounts" {
   sql = <<-EOQ
     select
-      'Total Accounts' as label,
+      'Accounts' as label,
       count(distinct line_item_usage_account_id) as value
     from
       aws_cost_and_usage_report
@@ -148,7 +146,7 @@ query "cost_by_service_dashboard_total_accounts" {
 query "cost_by_service_dashboard_total_services" {
   sql = <<-EOQ
     select
-      'Total Services' as label,
+      'Services' as label,
       count(distinct line_item_product_code) as value
     from
       aws_cost_and_usage_report
