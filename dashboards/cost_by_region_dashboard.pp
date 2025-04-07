@@ -10,7 +10,7 @@ dashboard "cost_by_region_dashboard" {
   container {
     # Multi-select Account Input
     input "cost_by_region_dashboard_accounts" {
-      title       = "Select accounts:"
+      title       = "Select account(s):"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
       width       = 2
@@ -30,18 +30,55 @@ dashboard "cost_by_region_dashboard" {
         "line_item_usage_account_ids" = self.input.cost_by_region_dashboard_accounts.value
       }
     }
+
+    card {
+      width = 2
+      query = query.cost_by_region_dashboard_total_accounts
+      icon  = "groups"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_ids" = self.input.cost_by_region_dashboard_accounts.value
+      }
+    }
+
+    card {
+      width = 2
+      query = query.cost_by_region_dashboard_total_regions
+      icon  = "map"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_ids" = self.input.cost_by_region_dashboard_accounts.value
+      }
+    }
   }
 
   container {
     # Cost Trend Graphs
     chart {
       title = "Monthly Cost Trend"
-      #type  = "bar"
+      type  = "line"
       width = 6
       query = query.cost_by_region_dashboard_monthly_cost
       args = {
         "line_item_usage_account_ids" = self.input.cost_by_region_dashboard_accounts.value
       }
+      legend {
+        display = "none"
+      }
+    }
+
+    chart {
+      title = "Daily Cost Trend (Last 30 Days)"
+      width = 6
+      type  = "line"
+      query = query.cost_by_region_dashboard_daily_cost
+
+      args = {
+        "line_item_usage_account_ids" = self.input.cost_by_region_dashboard_accounts.value
+      }
+
       legend {
         display = "none"
       }
@@ -93,6 +130,40 @@ query "cost_by_region_dashboard_total_cost" {
   }
 }
 
+query "cost_by_region_dashboard_total_accounts" {
+  sql = <<-EOQ
+    select
+      'Total Accounts' as label,
+      count(distinct line_item_usage_account_id) as value
+    from
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1);
+  EOQ
+
+  param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
+query "cost_by_region_dashboard_total_regions" {
+  sql = <<-EOQ
+    select
+      'Total Regions' as label,
+      count(distinct coalesce(product_region_code, 'global')) as value
+    from
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1);
+  EOQ
+
+  param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
 query "cost_by_region_dashboard_monthly_cost" {
   sql = <<-EOQ
     select 
@@ -117,11 +188,35 @@ query "cost_by_region_dashboard_monthly_cost" {
   }
 }
 
+query "cost_by_region_dashboard_daily_cost" {
+  sql = <<-EOQ
+    select
+      strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
+      coalesce(product_region_code, 'global') as "Region",
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
+      aws_cost_and_usage_report
+    where
+      line_item_usage_start_date >= current_date - interval '30' day
+      and ('all' in ($1) or line_item_usage_account_id in $1)
+    group by
+      date_trunc('day', line_item_usage_start_date),
+      coalesce(product_region_code, 'global')
+    order by
+      date_trunc('day', line_item_usage_start_date);
+  EOQ
+
+  param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
 query "cost_by_region_dashboard_top_10_regions" {
   sql = <<-EOQ
     select 
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
@@ -144,7 +239,7 @@ query "cost_by_region_dashboard_region_costs" {
     select 
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where

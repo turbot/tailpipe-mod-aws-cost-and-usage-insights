@@ -8,7 +8,7 @@ dashboard "cost_by_resource_dashboard" {
   }
 
   input "cost_by_resource_dashboard_account" {
-    title       = "Select accounts:"
+    title       = "Select account(s):"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.cost_by_resource_dashboard_aws_account_input
@@ -27,15 +27,52 @@ dashboard "cost_by_resource_dashboard" {
         "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
       }
     }
+
+    card {
+      width = 2
+      query = query.cost_by_resource_dashboard_total_accounts
+      icon  = "groups"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+      }
+    }
+
+    card {
+      width = 2
+      query = query.cost_by_resource_dashboard_total_resources
+      icon  = "layers"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+      }
+    }
   }
 
   container {
     # Cost Trend and Top Resources
     chart {
       title = "Monthly Cost Trend"
-      type  = "column"
+      type  = "line"
       width = 6
       query = query.cost_by_resource_dashboard_monthly_cost
+      args = {
+        "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
+      }
+
+      legend {
+        display = "none"
+      }
+    }
+
+    chart {
+      title = "Daily Cost Trend (Last 30 Days)"
+      width = 6
+      type  = "line"
+      query = query.cost_by_resource_dashboard_daily_cost
+
       args = {
         "line_item_usage_account_id" = self.input.cost_by_resource_dashboard_account.value
       }
@@ -91,6 +128,43 @@ query "cost_by_resource_dashboard_total_cost" {
   }
 }
 
+query "cost_by_resource_dashboard_total_accounts" {
+  sql = <<-EOQ
+    select
+      'Total Accounts' as label,
+      count(distinct line_item_usage_account_id) as value
+    from
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1)
+      and line_item_resource_id is not null;
+  EOQ
+
+  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
+query "cost_by_resource_dashboard_total_resources" {
+  sql = <<-EOQ
+    select
+      'Total Resources' as label,
+      count(distinct line_item_resource_id) as value
+    from
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1)
+      and line_item_resource_id is not null;
+  EOQ
+
+  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
+
 query "cost_by_resource_dashboard_monthly_cost" {
   sql = <<-EOQ
     select 
@@ -108,7 +182,34 @@ query "cost_by_resource_dashboard_monthly_cost" {
       line_item_resource_id
     order by 
       date_trunc('month', line_item_usage_start_date),
-      sum(line_item_unblended_cost) desc;
+      sum(line_item_unblended_cost) desc
+    limit 30;
+  EOQ
+
+  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
+query "cost_by_resource_dashboard_daily_cost" {
+  sql = <<-EOQ
+    select
+      strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
+      line_item_resource_id as "Resource",
+      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+    from
+      aws_cost_and_usage_report
+    where
+      line_item_usage_start_date >= current_date - interval '30' day
+      and ('all' in ($1) or line_item_usage_account_id in $1)
+      and line_item_resource_id is not null
+    group by
+      date_trunc('day', line_item_usage_start_date),
+      line_item_resource_id
+    order by
+      date_trunc('day', line_item_usage_start_date)
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}
@@ -124,7 +225,7 @@ query "cost_by_resource_dashboard_top_10_resources" {
       line_item_usage_account_id as "Account",
       line_item_product_code as "Service",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -153,7 +254,7 @@ query "cost_by_resource_dashboard_resource_costs" {
       line_item_product_code as "Service",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where 
@@ -165,7 +266,8 @@ query "cost_by_resource_dashboard_resource_costs" {
       coalesce(product_region_code, 'global'),
       line_item_usage_account_id
     order by 
-      sum(line_item_unblended_cost) desc;
+      sum(line_item_unblended_cost) desc
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}

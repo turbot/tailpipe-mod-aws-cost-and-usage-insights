@@ -8,7 +8,7 @@ dashboard "cost_by_tag_dashboard" {
   }
 
   input "cost_by_tag_dashboard_accounts" {
-    title       = "Select accounts:"
+    title       = "Select account(s):"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.cost_by_tag_dashboard_accounts_input
@@ -27,13 +27,35 @@ dashboard "cost_by_tag_dashboard" {
         "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
+
+    card {
+      width = 2
+      query = query.cost_by_tag_dashboard_total_accounts
+      icon  = "groups"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+      }
+    }
+
+    card {
+      width = 2
+      query = query.cost_by_tag_dashboard_total_tags
+      icon  = "label"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+      }
+    }
   }
 
   container {
     # Cost Trend and Key/Value Breakdown
     chart {
       title = "Monthly Cost Trend"
-      type  = "column"
+      type  = "line"
       width = 6
       query = query.cost_by_tag_dashboard_monthly_cost_trend
       args = {
@@ -46,6 +68,21 @@ dashboard "cost_by_tag_dashboard" {
 
       series "Total Cost" {
         title = "Tag Costs"
+      }
+    }
+
+    chart {
+      title = "Daily Cost Trend (Last 30 Days)"
+      type  = "line"
+      width = 6
+      query = query.cost_by_tag_dashboard_daily_cost_trend
+
+      args = {
+        "line_item_usage_account_id" = self.input.cost_by_tag_dashboard_accounts.value
+      }
+
+      legend {
+        display = "none"
       }
     }
 
@@ -107,6 +144,48 @@ query "cost_by_tag_dashboard_total_cost" {
   }
 }
 
+query "cost_by_tag_dashboard_total_accounts" {
+  sql = <<-EOQ
+    select
+      'Total Accounts' as label,
+      count(distinct line_item_usage_account_id) as value
+    from 
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1)
+      and resource_tags is not null;
+  EOQ
+
+  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
+query "cost_by_tag_dashboard_total_tags" {
+  sql = <<-EOQ
+    with all_tags as (
+      select
+        unnest(json_keys(resource_tags)) as tag_key
+      from
+        aws_cost_and_usage_report
+      where
+        ('all' in ($1) or line_item_usage_account_id in $1)
+        and resource_tags is not null
+    )
+    select
+      'Total Tags' as label,
+      count(distinct tag_key) as value
+    from
+      all_tags;
+  EOQ
+
+  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
 query "cost_by_tag_dashboard_monthly_cost_trend" {
   sql = <<-EOQ
     with parsed_entries as (
@@ -154,7 +233,66 @@ query "cost_by_tag_dashboard_monthly_cost_trend" {
     from 
       tag_costs
     order by 
-      month, cost desc;
+      month, cost desc
+    limit 30;
+  EOQ
+
+  param "line_item_usage_account_id" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
+query "cost_by_tag_dashboard_daily_cost_trend" {
+  sql = <<-EOQ
+    with parsed_entries as (
+      select 
+        distinct unnest(json_keys(resource_tags)) as tag_key,
+        json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
+        line_item_usage_start_date,
+        line_item_usage_account_id,
+        line_item_unblended_cost
+      from 
+        aws_cost_and_usage_report
+      where 
+        resource_tags is not null
+    ),
+    formatted_entries as (
+      select
+        tag_key,
+        tag_value,
+        line_item_usage_start_date,
+        line_item_unblended_cost
+      from 
+        parsed_entries
+      where 
+        ('all' in ($1) or line_item_usage_account_id in $1)
+    ),
+    tag_costs as (
+      select 
+        date_trunc('day', line_item_usage_start_date) as day,
+        concat(tag_key, ': ', tag_value) as tag,
+        sum(line_item_unblended_cost) as cost
+      from 
+        formatted_entries
+      where 
+        tag_value <> '""'
+      group by 
+        date_trunc('day', line_item_usage_start_date),
+        tag_key,
+        tag_value
+    )
+    select 
+      strftime(day, '%d-%m-%Y') as "Date",
+      tag as "Series",
+      round(cost, 2) as "Total Cost"
+    from 
+      tag_costs
+    where
+      day >= current_date - interval '30' day
+    order by 
+      day, cost desc
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}
@@ -202,7 +340,7 @@ query "cost_by_tag_dashboard_top_10_tags_by_cost" {
     )
     select 
       concat(tag_key, ': ', tag_value) as "Tag",
-      round(cost, 2) as "Total Cost"
+      printf('%.2f', cost) as "Total Cost"
     from 
       tag_costs
     order by cost desc
@@ -251,7 +389,7 @@ query "cost_by_tag_dashboard_tagged_resources" {
       concat(tag_key, ': ', tag_value) as "Tag",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from 
       formatted_entries
     where
@@ -260,7 +398,8 @@ query "cost_by_tag_dashboard_tagged_resources" {
       concat(tag_key, ': ', tag_value),
       line_item_usage_account_id,
       product_region_code
-    order by sum(line_item_unblended_cost) desc;
+    order by sum(line_item_unblended_cost) desc
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}
@@ -346,7 +485,7 @@ query "cost_by_tag_dashboard_untagged_resources" {
         else
           coalesce(product_region_code, 'global')
       end as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from 
       combined_resources
     where 
@@ -357,7 +496,8 @@ query "cost_by_tag_dashboard_untagged_resources" {
       product_region_code,
       line_item_usage_account_id
     order by 
-      sum(line_item_unblended_cost) desc;
+      sum(line_item_unblended_cost) desc
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}

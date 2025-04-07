@@ -20,6 +20,7 @@ dashboard "overview_dashboard" {
 
   container {
     # Summary Metrics
+    # Combined card showing Total Cost with Currency
     card {
       width = 2
       query = query.overview_dashboard_total_cost
@@ -30,13 +31,25 @@ dashboard "overview_dashboard" {
         "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
+    # Card showing Total Accounts
+    card {
+      width = 2
+      query = query.overview_dashboard_total_accounts
+      icon  = "groups"
+      type  = "info"
+
+      args = {
+        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+      }
+    }
+
   }
 
   container {
     # Graphs
     chart {
       title = "Monthly Cost Trend"
-      type  = "column"
+      type  = "line"
       width = 6
       query = query.overview_dashboard_monthly_cost
       args = {
@@ -49,8 +62,8 @@ dashboard "overview_dashboard" {
     }
 
     chart {
-      title = "Daily Cost Trend"
-      type  = "column"
+      title = "Daily Cost Trend (Last 30 Days)"
+      type  = "line"
       width = 6
       query = query.overview_dashboard_daily_cost
       args = {
@@ -61,6 +74,7 @@ dashboard "overview_dashboard" {
         display = "none"
       }
     }
+
   }
 
   container {
@@ -127,11 +141,27 @@ query "overview_dashboard_total_cost" {
   }
 }
 
+query "overview_dashboard_total_accounts" {
+  sql = <<-EOQ
+    select
+      'Total Accounts' as label,
+      count(distinct line_item_usage_account_id) as value
+    from
+      aws_cost_and_usage_report
+    where
+      ('all' in ($1) or line_item_usage_account_id in $1);
+  EOQ
+
+  param "line_item_usage_account_ids" {}
+  tags = {
+    folder = "Hidden"
+  }
+}
+
 query "overview_dashboard_monthly_cost" {
   sql = <<-EOQ
     select
       strftime(date_trunc('month', line_item_usage_start_date), '%b %Y') as "Month",
-      line_item_usage_account_id as "Account Id",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
@@ -139,11 +169,9 @@ query "overview_dashboard_monthly_cost" {
       line_item_usage_start_date >= current_date - interval '6' month
       and ('all' in ($1) or line_item_usage_account_id in $1)
     group by
-      date_trunc('month', line_item_usage_start_date),
-      line_item_usage_account_id
+      date_trunc('month', line_item_usage_start_date)
     order by
-      date_trunc('month', line_item_usage_start_date),
-      line_item_usage_account_id;
+      date_trunc('month', line_item_usage_start_date);
   EOQ
   param "line_item_usage_account_ids" {}
   tags = {
@@ -155,7 +183,6 @@ query "overview_dashboard_daily_cost" {
   sql = <<-EOQ
     select
       strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
-      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
@@ -163,13 +190,10 @@ query "overview_dashboard_daily_cost" {
       line_item_usage_start_date >= current_date - interval '30' day
       and ('all' in ($1) or line_item_usage_account_id in $1)
     group by
-      date_trunc('day', line_item_usage_start_date),
-      line_item_usage_account_id
+      date_trunc('day', line_item_usage_start_date)
     order by
-      date_trunc('day', line_item_usage_start_date),
-      line_item_usage_account_id;
+      date_trunc('day', line_item_usage_start_date);
   EOQ
-
   param "line_item_usage_account_ids" {}
   tags = {
     folder = "Hidden"
@@ -180,7 +204,7 @@ query "overview_dashboard_top_10_accounts" {
   sql = <<-EOQ
     select
       line_item_usage_account_id as "Account",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
@@ -188,7 +212,7 @@ query "overview_dashboard_top_10_accounts" {
     group by
       "Account"
     order by
-      "Total Cost" desc
+      sum(line_item_unblended_cost) desc
     limit 10;
   EOQ
 
@@ -202,7 +226,7 @@ query "overview_dashboard_top_10_regions" {
   sql = <<-EOQ
     select
       coalesce(product_region_code, 'global') as "Region",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
@@ -224,7 +248,7 @@ query "overview_dashboard_top_10_services" {
   sql = <<-EOQ
     select
       product_service_code as "Service",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
@@ -247,7 +271,7 @@ query "overview_dashboard_top_10_resources" {
       line_item_resource_id as "Resource",
       line_item_usage_account_id as "Account",
       coalesce(product_region_code, 'global') as "Region",
-      format('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
     from
       aws_cost_and_usage_report
     where

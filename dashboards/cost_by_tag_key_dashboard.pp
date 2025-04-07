@@ -8,7 +8,7 @@ dashboard "cost_by_tag_key_dashboard" {
   }
 
   input "cost_by_tag_key_dashboard_accounts" {
-    title       = "Select accounts:"
+    title       = "Select account(s):"
     description = "Select an AWS account to filter the dashboard."
     type        = "multiselect"
     query       = query.cost_by_tag_key_dashboard_accounts_input
@@ -170,7 +170,8 @@ query "cost_by_tag_key_dashboard_monthly_cost" {
       tag_costs
     order by 
       month,
-      cost desc;
+      cost desc
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}
@@ -285,7 +286,8 @@ query "cost_by_tag_key_dashboard_tag_value_costs" {
     from 
       grouped_costs
     order by 
-      cost desc;
+      cost desc
+    limit 30;
   EOQ
 
   param "line_item_usage_account_id" {}
