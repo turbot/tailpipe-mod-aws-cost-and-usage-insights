@@ -47,6 +47,7 @@ dashboard "cost_by_account_dashboard" {
     # Cost Trend Charts
     chart {
       title = "Monthly Cost Trend"
+      type  = "line"
       width = 6
       query = query.cost_by_account_dashboard_monthly_cost
       args = {
@@ -194,7 +195,7 @@ query "cost_by_account_dashboard_top_10_accounts" {
   sql = <<-EOQ
     select 
       line_item_usage_account_id as "Account",
-      printf('%.2f', sum(line_item_unblended_cost)) as "Total Cost"
+      cast(round(sum(line_item_unblended_cost), 2) as double) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
