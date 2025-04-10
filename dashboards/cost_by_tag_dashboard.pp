@@ -290,6 +290,7 @@ query "cost_by_tag_dashboard_tag_value_costs" {
         unnest(json_keys(resource_tags)) as tag_key,
         json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
         line_item_usage_account_id,
+        line_item_usage_account_name,
         line_item_unblended_cost,
         product_region_code
       from 
@@ -303,6 +304,7 @@ query "cost_by_tag_dashboard_tag_value_costs" {
         tag_key,
         tag_value,
         line_item_usage_account_id,
+        line_item_usage_account_name,
         line_item_unblended_cost,
         product_region_code
       from 
@@ -318,6 +320,7 @@ query "cost_by_tag_dashboard_tag_value_costs" {
           else replace(tag_value, '"', '')
         end as tag_display,
         line_item_usage_account_id,
+        line_item_usage_account_name,
         coalesce(product_region_code, 'global') as region,
         sum(line_item_unblended_cost) as cost
       from 
@@ -325,11 +328,16 @@ query "cost_by_tag_dashboard_tag_value_costs" {
       group by 
         tag_display,
         line_item_usage_account_id,
+        line_item_usage_account_name,
         region
     )
     select 
       tag_display as "Tag Value",
-      line_item_usage_account_id as "Account ID",
+      line_item_usage_account_id ||
+      case
+        when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
+        else ''
+      end as "Account",
       region as "Region",
       round(cost, 2) as "Total Cost"
     from 
@@ -350,7 +358,11 @@ query "cost_by_tag_dashboard_accounts_input" {
   sql = <<-EOQ
     with account_ids as (
       select
-        distinct line_item_usage_account_id as label,
+        distinct line_item_usage_account_id ||
+        case
+          when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
+          else ''
+        end as label,
         line_item_usage_account_id as value
       from
         aws_cost_and_usage_report

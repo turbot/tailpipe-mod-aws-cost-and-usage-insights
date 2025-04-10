@@ -232,14 +232,19 @@ query "cost_by_account_dashboard_top_10_accounts" {
 query "cost_by_account_dashboard_account_costs" {
   sql = <<-EOQ
     select 
-      line_item_usage_account_id as "Account",
+      line_item_usage_account_id ||
+      case
+        when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
+        else ''
+      end as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
     group by 
-      line_item_usage_account_id
+      line_item_usage_account_id,
+      line_item_usage_account_name
     order by 
       sum(line_item_unblended_cost) desc;
   EOQ
@@ -254,7 +259,11 @@ query "cost_by_account_dashboard_accounts_input" {
   sql = <<-EOQ
     with account_ids as (
       select
-        distinct line_item_usage_account_id as label,
+        distinct line_item_usage_account_id ||
+        case
+          when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
+          else ''
+        end as label,
         line_item_usage_account_id as value
       from
         aws_cost_and_usage_report

@@ -253,7 +253,11 @@ query "cost_by_region_dashboard_top_10_regions" {
 query "cost_by_region_dashboard_region_costs" {
   sql = <<-EOQ
     select 
-      line_item_usage_account_id as "Account",
+      line_item_usage_account_id ||
+      case
+        when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
+        else ''
+      end as "Account",
       coalesce(product_region_code, 'global') as "Region",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from 
@@ -262,7 +266,8 @@ query "cost_by_region_dashboard_region_costs" {
       ('all' in ($1) or line_item_usage_account_id in $1)
     group by 
       coalesce(product_region_code, 'global'),
-      line_item_usage_account_id
+      line_item_usage_account_id,
+      line_item_usage_account_name
     order by 
       sum(line_item_unblended_cost) desc;
   EOQ
@@ -277,7 +282,11 @@ query "cost_by_region_dashboard_accounts_input" {
   sql = <<-EOQ
     with account_ids as (
       select
-        distinct line_item_usage_account_id as label,
+        distinct line_item_usage_account_id ||
+        case
+          when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
+          else ''
+        end as label,
         line_item_usage_account_id as value
       from
         aws_cost_and_usage_report
