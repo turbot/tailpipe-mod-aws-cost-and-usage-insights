@@ -12,7 +12,7 @@ dashboard "cost_by_tag_dashboard" {
     description = "Choose one or more AWS accounts to analyze."
     type        = "multiselect"
     query       = query.cost_by_tag_dashboard_accounts_input
-    width       = 2
+    width       = 4
   }
 
   input "cost_by_tag_dashboard_tag_key" {
@@ -20,11 +20,13 @@ dashboard "cost_by_tag_dashboard" {
     description = "Select a tag key to analyze costs by tag values."
     type        = "select"
     query       = query.cost_by_tag_dashboard_tag_key_input
-    width       = 2
+    width       = 4
 
+    /*
     args = {
-      "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
+      "account_ids" = self.input.cost_by_tag_dashboard_accounts.value
     }
+    */
   }
 
   container {
@@ -36,7 +38,7 @@ dashboard "cost_by_tag_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
+        "account_ids" = self.input.cost_by_tag_dashboard_accounts.value
         "tag_key"                     = self.input.cost_by_tag_dashboard_tag_key.value
       }
     }
@@ -48,7 +50,7 @@ dashboard "cost_by_tag_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
+        "account_ids" = self.input.cost_by_tag_dashboard_accounts.value
       }
     }
 
@@ -61,8 +63,9 @@ dashboard "cost_by_tag_dashboard" {
       type  = "column"
       width = 6
       query = query.cost_by_tag_dashboard_monthly_cost
+
       args = {
-        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
+        "account_ids" = self.input.cost_by_tag_dashboard_accounts.value
         "tag_key"                     = self.input.cost_by_tag_dashboard_tag_key.value
       }
 
@@ -71,31 +74,15 @@ dashboard "cost_by_tag_dashboard" {
       }
     }
 
-    /*
     chart {
-      title = "Monthly Cost by Tag Value Trend"
-      type  = "line"
-      width = 6
-      query = query.cost_by_tag_dashboard_monthly_cost
-      args = {
-        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
-        "tag_key"                     = self.input.cost_by_tag_dashboard_tag_key.value
-      }
-
-      legend {
-        display = "none"
-      }
-    }
-    */
-
-    chart {
-      title = "Top 10 Tag Values by Cost"
+      title = "Top 10 Tag Values"
       type  = "table"
       width = 6
       query = query.cost_by_tag_dashboard_top_10_tag_values
+
       args = {
-        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value,
-        "tag_key"                    = self.input.cost_by_tag_dashboard_tag_key.value
+        "account_ids" = self.input.cost_by_tag_dashboard_accounts.value,
+        "tag_key"                     = self.input.cost_by_tag_dashboard_tag_key.value
       }
     }
 
@@ -104,12 +91,13 @@ dashboard "cost_by_tag_dashboard" {
   container {
     # Detailed Tables
     table {
-      title = "Cost by Tag Value and Account"
+      title = "Tag Value Costs"
       width = 12
       query = query.cost_by_tag_dashboard_tag_value_costs
+
       args = {
-        "line_item_usage_account_ids" = self.input.cost_by_tag_dashboard_accounts.value
-        "tag_key"                    = self.input.cost_by_tag_dashboard_tag_key.value
+        "account_ids" = self.input.cost_by_tag_dashboard_accounts.value
+        "tag_key"                     = self.input.cost_by_tag_dashboard_tag_key.value
       }
     }
   }
@@ -119,34 +107,42 @@ dashboard "cost_by_tag_dashboard" {
 
 query "cost_by_tag_dashboard_total_cost" {
   sql = <<-EOQ
-    with parsed_entries as (
-      select
-        unnest(json_keys(resource_tags)) as tag_key,
-        line_item_unblended_cost,
-        line_item_currency_code
-      from aws_cost_and_usage_report
-      where 
-        resource_tags is not null
-        and ('all' in ($1) or line_item_usage_account_id in $1)
-    ),
-    filtered_entries as (
-      select
-        sum(line_item_unblended_cost) as cost,
-        max(line_item_currency_code) as currency
-      from
-        parsed_entries
-      where
-        $2 = 'all' or tag_key = $2
-    )
-    select 
-      'Total Cost (' || currency || ')' as label,
-      round(cost, 2) as value
-    from 
-      filtered_entries;
+with 
+-- first, get resources with the specific tag key we're looking for
+tagged_resources as (
+  select 
+    line_item_resource_id
+  from 
+    aws_cost_and_usage_report
+  where 
+    resource_tags is not null
+    and array_contains(json_keys(resource_tags), $2) -- filter for resources with the specified tag key
+    and ('all' in ($1) or line_item_usage_account_id in $1) -- filter for specified accounts
+    and line_item_resource_id is not null
+  group by
+    line_item_resource_id
+),
+-- then get costs only for those resources
+filtered_entries as (
+  select
+    sum(line_item_unblended_cost) as cost,
+    max(line_item_currency_code) as currency
+  from
+    aws_cost_and_usage_report
+  where
+    line_item_resource_id in (select line_item_resource_id from tagged_resources)
+    and ('all' in ($1) or line_item_usage_account_id in $1) -- filter for specified accounts
+)
+select
+  'Total Cost (' || currency || ')' as label,
+  round(cost, 2) as value
+from
+  filtered_entries;
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
   param "tag_key" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -163,7 +159,8 @@ query "cost_by_tag_dashboard_total_accounts" {
       ('all' in ($1) or line_item_usage_account_id in $1);
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -179,9 +176,9 @@ query "cost_by_tag_dashboard_monthly_cost" {
         line_item_usage_start_date,
         line_item_usage_account_id,
         line_item_unblended_cost
-      from 
+      from
         aws_cost_and_usage_report
-      where 
+      where
         resource_tags is not null
         and ('all' in ($1) or line_item_usage_account_id in $1)
     ),
@@ -191,40 +188,37 @@ query "cost_by_tag_dashboard_monthly_cost" {
         tag_value,
         line_item_usage_start_date,
         line_item_unblended_cost
-      from 
+      from
         parsed_entries
-      where 
-        ($2 = 'all' or tag_key = $2)
+      where
+        tag_key = $2
         and tag_value <> '""'
     ),
     tag_costs as (
-      select 
+      select
         date_trunc('month', line_item_usage_start_date) as month,
-        case 
-          when $2 = 'all' then concat(tag_key, ': ', replace(tag_value, '"', ''))
-          else replace(tag_value, '"', '')
-        end as series,
+        replace(tag_value, '"', '') as series,
         sum(line_item_unblended_cost) as cost
-      from 
+      from
         filtered_entries
-      group by 
+      group by
         date_trunc('month', line_item_usage_start_date),
         series
     )
-    select 
+    select
       strftime(month, '%b %Y') as "Month",
       series as "Series",
       round(cost, 2) as "Total Cost"
-    from 
+    from
       tag_costs
-    order by 
+    order by
       month,
-      cost desc
-    limit 30;
+      cost desc;
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
   param "tag_key" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -238,7 +232,7 @@ query "cost_by_tag_dashboard_top_10_tag_values" {
         json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
         line_item_usage_account_id,
         line_item_unblended_cost
-      from 
+      from
         aws_cost_and_usage_report
       where
         resource_tags is not null
@@ -249,35 +243,34 @@ query "cost_by_tag_dashboard_top_10_tag_values" {
         tag_key,
         tag_value,
         line_item_unblended_cost
-      from 
+      from
         parsed_entries
-      where 
-        ($2 = 'all' or tag_key = $2)
+      where
+        tag_key = $2
         and tag_value <> '""'
     ),
     tag_costs as (
-      select 
-        case 
-          when $2 = 'all' then concat(tag_key, ': ', replace(tag_value, '"', ''))
-          else replace(tag_value, '"', '')
-        end as tag_display,
+      select
+        replace(tag_value, '"', '') as tag_display,
         sum(line_item_unblended_cost) as cost
-      from 
+      from
         filtered_entries
-      group by 
+      group by
         tag_display
     )
-    select 
+    select
       tag_display as "Tag Value",
       round(cost, 2) as "Total Cost"
-    from 
+    from
       tag_costs
-    order by cost desc
+    order by
+      cost desc
     limit 10;
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
   param "tag_key" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -289,11 +282,12 @@ query "cost_by_tag_dashboard_tag_value_costs" {
       select
         unnest(json_keys(resource_tags)) as tag_key,
         json_extract(resource_tags, '$.' || unnest(json_keys(resource_tags))) as tag_value,
+        line_item_resource_id,
         line_item_usage_account_id,
         line_item_usage_account_name,
         line_item_unblended_cost,
         product_region_code
-      from 
+      from
         aws_cost_and_usage_report
       where
         resource_tags is not null
@@ -303,35 +297,36 @@ query "cost_by_tag_dashboard_tag_value_costs" {
       select
         tag_key,
         tag_value,
+        line_item_resource_id,
         line_item_usage_account_id,
         line_item_usage_account_name,
         line_item_unblended_cost,
         product_region_code
-      from 
+      from
         parsed_entries
-      where 
-        ($2 = 'all' or tag_key = $2)
+      where
+        tag_key = $2
         and tag_value <> '""'
     ),
     grouped_costs as (
       select
-        case 
-          when $2 = 'all' then concat(tag_key, ': ', replace(tag_value, '"', ''))
-          else replace(tag_value, '"', '')
-        end as tag_display,
+        replace(tag_value, '"', '') as tag_display,
+        line_item_resource_id,
         line_item_usage_account_id,
         line_item_usage_account_name,
         coalesce(product_region_code, 'global') as region,
         sum(line_item_unblended_cost) as cost
-      from 
+      from
         filtered_entries
-      group by 
+      group by
         tag_display,
+        line_item_resource_id,
         line_item_usage_account_id,
         line_item_usage_account_name,
         region
     )
-    select 
+    select
+      line_item_resource_id as "Resource",
       tag_display as "Tag Value",
       line_item_usage_account_id ||
       case
@@ -340,15 +335,15 @@ query "cost_by_tag_dashboard_tag_value_costs" {
       end as "Account",
       region as "Region",
       round(cost, 2) as "Total Cost"
-    from 
+    from
       grouped_costs
-    order by 
-      cost desc
-    limit 30;
+    order by
+      cost desc;
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
   param "tag_key" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -358,7 +353,8 @@ query "cost_by_tag_dashboard_accounts_input" {
   sql = <<-EOQ
     with account_ids as (
       select
-        distinct line_item_usage_account_id ||
+        distinct on(line_item_usage_account_id)
+        line_item_usage_account_id ||
         case
           when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
           else ''
@@ -393,15 +389,13 @@ query "cost_by_tag_dashboard_tag_key_input" {
       aws_cost_and_usage_report,
       unnest(json_keys(resource_tags)) as t(tag_key)
     where
-      ('all' in ($1) or line_item_usage_account_id in $1)
-      and resource_tags is not null
+      --('all' in ($1) or line_item_usage_account_id in $1)
+      resource_tags is not null
       and t.tag_key <> ''
       and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
     order by
       label;
   EOQ
-
-  param "line_item_usage_account_ids" {}
 
   tags = {
     folder = "Hidden"

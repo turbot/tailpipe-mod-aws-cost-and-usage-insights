@@ -8,19 +8,17 @@ dashboard "overview_dashboard" {
   }
 
   container {
-    # Multi-select Account Input
     input "overview_dashboard_accounts" {
       title       = "Select accounts:"
       description = "Choose one or more AWS accounts to analyze."
       type        = "multiselect"
-      width       = 2
+      width       = 4
       query       = query.overview_dashboard_accounts_input
     }
   }
 
   container {
     # Summary Metrics
-    # Combined card showing Total Cost with Currency
     card {
       width = 2
       query = query.overview_dashboard_total_cost
@@ -28,11 +26,10 @@ dashboard "overview_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
-    # Card showing Total Accounts
     card {
       width = 2
       query = query.overview_dashboard_total_accounts
@@ -40,7 +37,7 @@ dashboard "overview_dashboard" {
       type  = "info"
 
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -50,11 +47,12 @@ dashboard "overview_dashboard" {
     # Graphs
     chart {
       title = "Monthly Cost Trend"
-      type  = "line"
+      type  = "column"
       width = 6
       query = query.overview_dashboard_monthly_cost
+
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
 
       legend {
@@ -67,8 +65,9 @@ dashboard "overview_dashboard" {
       type  = "line"
       width = 6
       query = query.overview_dashboard_daily_cost
+
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
 
       legend {
@@ -85,8 +84,9 @@ dashboard "overview_dashboard" {
       type  = "table"
       width = 6
       query = query.overview_dashboard_top_10_accounts
+
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -95,8 +95,9 @@ dashboard "overview_dashboard" {
       type  = "table"
       width = 6
       query = query.overview_dashboard_top_10_regions
+
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -105,8 +106,9 @@ dashboard "overview_dashboard" {
       type  = "table"
       width = 6
       query = query.overview_dashboard_top_10_services
+
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
 
@@ -115,8 +117,9 @@ dashboard "overview_dashboard" {
       type  = "table"
       width = 6
       query = query.overview_dashboard_top_10_resources
+
       args = {
-        "line_item_usage_account_ids" = self.input.overview_dashboard_accounts.value
+        "account_ids" = self.input.overview_dashboard_accounts.value
       }
     }
   }
@@ -136,7 +139,9 @@ query "overview_dashboard_total_cost" {
     group by
       line_item_currency_code;
   EOQ
-  param "line_item_usage_account_ids" {}
+
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -153,7 +158,8 @@ query "overview_dashboard_total_accounts" {
       ('all' in ($1) or line_item_usage_account_id in $1);
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -173,7 +179,9 @@ query "overview_dashboard_monthly_cost" {
     order by
       date_trunc('month', line_item_usage_start_date);
   EOQ
-  param "line_item_usage_account_ids" {}
+
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -195,7 +203,7 @@ query "overview_dashboard_daily_cost" {
       date_trunc('day', line_item_usage_start_date);
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
 
   tags = {
     folder = "Hidden"
@@ -222,7 +230,8 @@ query "overview_dashboard_top_10_accounts" {
     limit 10;
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -244,7 +253,8 @@ query "overview_dashboard_top_10_regions" {
     limit 10;
   EOQ
 
-  param "line_item_usage_account_ids" {}
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -265,7 +275,9 @@ query "overview_dashboard_top_10_services" {
       sum(line_item_unblended_cost) desc
     limit 10;
   EOQ
-  param "line_item_usage_account_ids" {}
+
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -291,7 +303,9 @@ query "overview_dashboard_top_10_resources" {
       sum(line_item_unblended_cost) desc
     limit 10;
   EOQ
-  param "line_item_usage_account_ids" {}
+
+  param "account_ids" {}
+
   tags = {
     folder = "Hidden"
   }
@@ -301,7 +315,8 @@ query "overview_dashboard_accounts_input" {
   sql = <<-EOQ
     with account_ids as (
       select
-        distinct line_item_usage_account_id ||
+        distinct on(line_item_usage_account_id)
+        line_item_usage_account_id ||
         case
           when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
           else ''

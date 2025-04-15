@@ -1,7 +1,7 @@
 This dashboard answers the following questions:
 
-- What is the total AWS cost associated with a specific tag key?
-- What currency is used for the selected account(s)?
-- How do costs break down by tag value?
-- What are the top 10 tag values contributing most to AWS cost?
+- What is the total cost for a specific tag key?
+- What currency is used for cost calculations?
+- How has the cost for tag values trended monthly?
+- What are the top 10 most expensive tag values?
 - What are the detailed costs by tag value, account, and region?
