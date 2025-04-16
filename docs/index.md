@@ -8,6 +8,7 @@ The [AWS Cost and Usage Insights Mod](https://hub.powerpipe.io/mods/turbot/tailp
 
 <img src="https://raw.githubusercontent.com/turbot/tailpipe-mod-aws-cost-and-usage-insights/main/docs/images/aws_cost_and_usage_overview_dashboard.png" width="50%" type="thumbnail"/>
 <img src="https://raw.githubusercontent.com/turbot/tailpipe-mod-aws-cost-and-usage-insights/main/docs/images/aws_cost_and_usage_cost_by_service_dashboard.png" width="50%" type="thumbnail"/>
+<img src="https://raw.githubusercontent.com/turbot/tailpipe-mod-aws-cost-and-usage-insights/main/docs/images/aws_cost_and_usage_cost_by_tag_dashboard.png" width="50%" type="thumbnail"/>
 
 ## Documentation
 

@@ -21,12 +21,6 @@ dashboard "cost_by_tag_dashboard" {
     type        = "select"
     query       = query.cost_by_tag_dashboard_tag_key_input
     width       = 4
-
-    /*
-    args = {
-      "account_ids" = self.input.cost_by_tag_dashboard_accounts.value
-    }
-    */
   }
 
   container {
@@ -281,7 +275,6 @@ query "cost_by_tag_dashboard_tag_value_costs" {
     grouped_costs as (
       select
         replace(tag_value, '"', '') as tag_display,
-        line_item_resource_id,
         line_item_usage_account_id,
         coalesce(product_region_code, 'global') as region,
         sum(line_item_unblended_cost) as cost
@@ -289,12 +282,10 @@ query "cost_by_tag_dashboard_tag_value_costs" {
         filtered_entries
       group by
         tag_display,
-        line_item_resource_id,
         line_item_usage_account_id,
         region
     )
     select
-      line_item_resource_id as "Resource",
       tag_display as "Tag Value",
       line_item_usage_account_id as "Account",
       region as "Region",
@@ -353,7 +344,6 @@ query "cost_by_tag_dashboard_tag_key_input" {
       aws_cost_and_usage_report,
       unnest(json_keys(resource_tags)) as t(tag_key)
     where
-      --('all' in ($1) or line_item_usage_account_id in $1)
       resource_tags is not null
       and t.tag_key <> ''
       and json_extract(resource_tags, '$.' || t.tag_key) <> '""'
