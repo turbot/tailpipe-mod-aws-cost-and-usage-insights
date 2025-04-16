@@ -4,7 +4,7 @@ dashboard "cost_by_service_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/CostAndUsageReport"
+    service = "AWS/CostAndUsage"
   }
 
   input "cost_by_service_dashboard_accounts" {
@@ -177,32 +177,6 @@ query "cost_by_service_dashboard_monthly_cost" {
     folder = "Hidden"
   }
 }
-
-query "cost_by_service_dashboard_daily_cost" {
-  sql = <<-EOQ
-    select
-      date_trunc('day', line_item_usage_start_date) as "Date",
-      coalesce(line_item_product_code, 'N/A') as "Service",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from
-      aws_cost_and_usage_report
-    where
-      line_item_usage_start_date >= current_date - interval '30' day
-      and ('all' in ($1) or line_item_usage_account_id in $1)
-    group by
-      date_trunc('day', line_item_usage_start_date),
-      line_item_product_code
-    order by
-      date_trunc('day', line_item_usage_start_date);
-  EOQ
-
-  param "account_ids" {}
-
-  tags = {
-    folder = "Hidden"
-  }
-}
-
 
 query "cost_by_service_dashboard_top_10_services" {
   sql = <<-EOQ
