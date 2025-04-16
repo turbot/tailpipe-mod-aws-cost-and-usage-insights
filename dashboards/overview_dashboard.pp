@@ -213,11 +213,7 @@ query "overview_dashboard_daily_cost" {
 query "overview_dashboard_top_10_accounts" {
   sql = <<-EOQ
     select
-      line_item_usage_account_id ||
-      case
-        when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
-        else ''
-      end as "Account",
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report

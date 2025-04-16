@@ -116,31 +116,6 @@ query "cost_by_account_dashboard_total_accounts" {
   }
 }
 
-query "cost_by_account_dashboard_daily_cost" {
-  sql = <<-EOQ
-    select
-      strftime(date_trunc('day', line_item_usage_start_date), '%d-%m-%Y') as "Date",
-      line_item_usage_account_id as "Account",
-      round(sum(line_item_unblended_cost), 2) as "Total Cost"
-    from
-      aws_cost_and_usage_report
-    where
-      line_item_usage_start_date >= current_date - interval '30' day
-      and ('all' in ($1) or line_item_usage_account_id in $1)
-    group by
-      date_trunc('day', line_item_usage_start_date),
-      line_item_usage_account_id
-    order by
-      date_trunc('day', line_item_usage_start_date);
-  EOQ
-
-  param "account_ids" {}
-
-  tags = {
-    folder = "Hidden"
-  }
-}
-
 query "cost_by_account_dashboard_monthly_cost" {
   sql = <<-EOQ
     select
@@ -169,19 +144,14 @@ query "cost_by_account_dashboard_monthly_cost" {
 query "cost_by_account_dashboard_account_costs" {
   sql = <<-EOQ
     select
-      line_item_usage_account_id ||
-      case
-        when line_item_usage_account_name is not null then ' (' || coalesce(line_item_usage_account_name, '') || ')'
-        else ''
-      end as "Account",
+      line_item_usage_account_id as "Account",
       round(sum(line_item_unblended_cost), 2) as "Total Cost"
     from
       aws_cost_and_usage_report
     where
       ('all' in ($1) or line_item_usage_account_id in $1)
     group by
-      line_item_usage_account_id,
-      line_item_usage_account_name
+      line_item_usage_account_id
     order by
       sum(line_item_unblended_cost) desc;
   EOQ
