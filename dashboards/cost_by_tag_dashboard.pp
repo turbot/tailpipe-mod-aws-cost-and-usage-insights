@@ -4,7 +4,7 @@ dashboard "cost_by_tag_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/CostAndUsage"
+    service = "AWS/CostAndUsageReport"
   }
 
   input "cost_by_tag_dashboard_accounts" {

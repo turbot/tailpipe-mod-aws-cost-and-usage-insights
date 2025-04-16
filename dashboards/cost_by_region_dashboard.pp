@@ -4,7 +4,7 @@ dashboard "cost_by_region_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/CostAndUsage"
+    service = "AWS/CostAndUsageReport"
   }
 
   container {

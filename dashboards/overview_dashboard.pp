@@ -4,7 +4,7 @@ dashboard "overview_dashboard" {
 
   tags = {
     type    = "Dashboard"
-    service = "AWS/CostAndUsage"
+    service = "AWS/CostAndUsageReport"
   }
 
   container {
